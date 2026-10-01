@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#04050b">
+    <meta name="description" content="Portfolio of Swapnil Lohar — developer and researcher working in C, C++, web development, and 3D."
+    >
+    <title>Swapnil Lohar — Systems, web &amp; 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.176.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <div class="loader" id="loader" role="status" aria-live="polite">
+      <div class="loader-inner">
+        <div class="loader-label">
+          <span>Initializing field</span>
+          <span id="loader-status">01 / 04</span>
+        </div>
+        <p class="loader-name">Swapnil Lohar</p>
+        <div class="loader-line" aria-hidden="true"></div>
+        <p class="loader-progress" id="loader-progress">Preparing the scene</p>
+      </div>
+    </div>
+
+    <div class="site-shell">
+      <header class="site-header" id="top">
+        <nav class="nav" aria-label="Primary navigation">
+          <a class="brand" href="#hero" aria-label="Swapnil Lohar — home">
+            <span class="brand-mark" aria-hidden="true">SL</span>
+            <span>Swapnil Lohar</span>
+          </a>
+          <div class="nav-links" id="nav-links">
+            <a href="#about">About</a>
+            <a href="#work">Work</a>
+            <a href="#research">Research</a>
+            <a href="#contact">Contact</a>
+          </div>
+          <span class="nav-meta">Portfolio / 2026</span>
+          <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">
+            <span aria-hidden="true"></span>
+          </button>
+        </nav>
+      </header>
+
+      <div class="status-rail" aria-hidden="true">
+        <span class="is-live">Available for opportunities</span>
+      </div>
+
+      <main id="main-content">
+        <section class="hero" id="hero" data-scene-section aria-labelledby="hero-title">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <p class="eyebrow" data-reveal>Developer / researcher</p>
+              <h1 id="hero-title" data-reveal>Building from <em>first principles.</em></h1>
+              <p class="hero-intro" data-reveal>
+                I'm Swapnil Lohar — a developer working across C, C++, the web, and 3D research. This is a record of the systems I build and the questions I keep following.
+              </p>
+              <div class="hero-actions" data-reveal>
+                <a class="button button--primary" href="#work">Enter the work</a>
+                <a class="button" href="#contact">Start a conversation</a>
+              </div>
+              <p class="hero-coordinate mono" data-reveal>20° / 73° — systems in motion</p>
+            </div>
+
+            <div class="hero-orbit" aria-hidden="true">
+              <div class="hero-orbit-grid"></div>
+              <span class="hero-orbit-label">Interactive field / 01</span>
+            </div>
+          </div>
+          <a class="scroll-cue" href="#about" aria-label="Scroll to about">Scroll to explore</a>
+        </section>
+
+        <section class="section" id="about" data-scene-section aria-labelledby="about-title">
+          <div class="section-inner">
+            <div class="section-heading" data-reveal>
+              <span class="section-index">01 / About</span>
+              <div>
+                <h2 id="about-title">Curious by nature.<br>Precise by practice.</h2>
+                <p>Low-level thinking, browser surfaces, and a growing interest in the space between code and image.</p>
+              </div>
+            </div>
+
+            <div class="about-layout">
+              <div class="about-copy" data-reveal>
+                <p>I'm <strong>Swapnil Lohar</strong> — a developer who works across the full stack of software, from low-level C systems to browser-based interfaces and academic 3D research. I care deeply about how things actually work under the hood.</p>
+                <p>My projects span <strong>terminal game engines in C</strong>, <strong>object-oriented systems in C++</strong>, <strong>multi-page HTML/CSS websites</strong>, and computer graphics simulations. I also research and write — my published paper on Autodesk Maya covers its architecture, history, and industry impact in depth.</p>
+              </div>
+
+              <dl class="about-aside" data-reveal>
+                <div class="about-fact"><dt>Focus</dt><dd>Systems programming, OOP design, web development, tech research</dd></div>
+                <div class="about-fact"><dt>Toolkit</dt><dd>VS Code, GCC / G++, Autodesk Maya, Git / GitHub</dd></div>
+                <div class="about-fact"><dt>Current</dt><dd>Open to internships, collaborations, and interesting problems</dd></div>
+                <div class="about-fact"><dt>Class</dt><dd>2026</dd></div>
+              </dl>
+            </div>
+
+            <div class="skills" data-reveal>
+              <div class="skills-heading">
+                <h3>Working vocabulary</h3>
+                <span>Languages / tools / areas</span>
+              </div>
+              <ul class="skill-list">
+                <li class="skill-item" style="--skill-level: 86%"><span>C</span><small>systems</small></li>
+                <li class="skill-item" style="--skill-level: 82%"><span>C++</span><small>OOP</small></li>
+                <li class="skill-item" style="--skill-level: 78%"><span>HTML / CSS</span><small>web</small></li>
+                <li class="skill-item" style="--skill-level: 68%"><span>Autodesk Maya</span><small>3D</small></li>
+                <li class="skill-item" style="--skill-level: 70%"><span>Git / GitHub</span><small>workflow</small></li>
+                <li class="skill-item" style="--skill-level: 74%"><span>Technical writing</span><small>research</small></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="work" data-scene-section aria-labelledby="work-title">
+          <div class="section-inner">
+            <div class="section-heading" data-reveal>
+              <span class="section-index">02 / Work</span>
+              <div>
+                <h2 id="work-title">Four small worlds.<br>Built from scratch.</h2>
+                <p>Each project is a study in how a system holds together — from terminal loops to a warm, multi-page storefront.</p>
+              </div>
+            </div>
+
+            <div class="project-list">
+              <article class="project-chapter" data-project data-reveal aria-labelledby="project-sweets-title">
+                <figure class="project-stage" aria-label="Abstract project visualization for Swapnil's Sweets">
+                  <div class="project-art project-art--warm" aria-hidden="true"><span class="art-glyph">01</span></div>
+                  <figcaption><span>HTML / CSS / 01</span><span>completed</span></figcaption>
+                </figure>
+                <div class="project-copy">
+                  <span class="project-number">01 / final microproject</span>
+                  <h3 id="project-sweets-title">Swapnil's Sweets</h3>
+                  <p>A fully-featured multi-page bakery website with product catalogue, contact page, feedback form, and multiple menu sections. A consistent warm design system across all pages.</p>
+                  <ul class="project-tags"><li>HTML5</li><li>CSS3</li><li>Multi-page</li><li>Responsive</li></ul>
+                  <span class="project-link" aria-label="Swapnil's Sweets project record">Project record</span>
+                </div>
+              </article>
+
+              <article class="project-chapter" data-project data-reveal aria-labelledby="project-terminal-title">
+                <figure class="project-stage" aria-label="Abstract project visualization for Terminal Game">
+                  <div class="project-art project-art--terminal" aria-hidden="true"><span class="art-glyph">02</span></div>
+                  <figcaption><span>C / 02</span><span>completed</span></figcaption>
+                </figure>
+                <div class="project-copy">
+                  <span class="project-number">02 / C microproject</span>
+                  <h3 id="project-terminal-title">Terminal Game</h3>
+                  <p>A terminal-based game in pure C. Manual memory management, game loop design, input handling, and state machine logic. Standalone — no external libraries.</p>
+                  <ul class="project-tags"><li>C</li><li>Game loop</li><li>State machine</li><li>Terminal I/O</li></ul>
+                  <span class="project-link" aria-label="Terminal Game project record">Project record</span>
+                </div>
+              </article>
+
+              <article class="project-chapter" data-project data-reveal aria-labelledby="project-bunk-title">
+                <figure class="project-stage" aria-label="Abstract project visualization for Bunk Tracker">
+                  <div class="project-art project-art--indigo" aria-hidden="true"><span class="art-glyph">03</span></div>
+                  <figcaption><span>C++ / 03</span><span>completed</span></figcaption>
+                </figure>
+                <div class="project-copy">
+                  <span class="project-number">03 / OOP microproject</span>
+                  <h3 id="project-bunk-title">Bunk Tracker</h3>
+                  <p>Object-oriented attendance management in C++. Applies classes, inheritance, encapsulation, and polymorphism to model a real-world student tracking problem.</p>
+                  <ul class="project-tags"><li>C++</li><li>OOP</li><li>Classes</li><li>Inheritance</li></ul>
+                  <span class="project-link" aria-label="Bunk Tracker project record">Project record</span>
+                </div>
+              </article>
+
+              <article class="project-chapter" data-project data-reveal aria-labelledby="project-environment-title">
+                <figure class="project-stage" aria-label="Abstract project visualization for Environment Simulator">
+                  <div class="project-art project-art--grid" aria-hidden="true"><span class="art-glyph">04</span></div>
+                  <figcaption><span>C / CGR / 04</span><span>completed</span></figcaption>
+                </figure>
+                <div class="project-copy">
+                  <span class="project-number">04 / CGR microproject</span>
+                  <h3 id="project-environment-title">Environment Simulator</h3>
+                  <p>A computer graphics and rendering simulation in C. Covers rendering pipelines, scene geometry, and visual output — all at the language level without frameworks.</p>
+                  <ul class="project-tags"><li>C</li><li>CGR</li><li>Simulation</li><li>Graphics</li></ul>
+                  <span class="project-link" aria-label="Environment Simulator project record">Project record</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="research" data-scene-section aria-labelledby="research-title">
+          <div class="section-inner">
+            <div class="section-heading" data-reveal>
+              <span class="section-index">03 / Research</span>
+              <div>
+                <h2 id="research-title">Published<br>work.</h2>
+                <p>Beyond building, I document. Technical writing and research sharpen how I think about systems and help me communicate complex ideas with precision.</p>
+              </div>
+            </div>
+
+            <div class="research-list">
+              <article class="research-entry" data-reveal>
+                <span class="research-meta">01 / 2026</span>
+                <div>
+                  <h3>Autodesk Maya: Evolution, Architecture, and Impact on the 3D Animation and Visual Effects Industry</h3>
+                  <p>A comprehensive academic paper tracing Maya's origins from Alias|Wavefront through Autodesk acquisition — analysing its node-based dependency graph architecture, MEL/Python scripting ecosystem, rendering pipeline, and impact on film, television, and game production.</p>
+                  <ul class="research-tags"><li>Autodesk Maya</li><li>3D Animation</li><li>VFX Pipeline</li><li>Computer Graphics</li><li>MEL Scripting</li><li>Academic Research</li></ul>
+                </div>
+                <span class="research-type">Research<br>paper</span>
+              </article>
+
+              <article class="research-entry" data-reveal>
+                <span class="research-meta">02 / 2026</span>
+                <div>
+                  <h3>Autodesk Maya Technical Report</h3>
+                  <p>An accompanying technical report covering hands-on Maya workflows, tools, and production-grade usage patterns for developers and technical directors. Complements the main research paper with applied examples.</p>
+                  <ul class="research-tags"><li>Maya Workflows</li><li>Technical Writing</li><li>3D Production</li></ul>
+                </div>
+                <span class="research-type">Technical<br>report</span>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section--contact" id="contact" data-scene-section aria-labelledby="contact-title">
+          <div class="section-inner contact-scene">
+            <div class="contact-intro" data-reveal>
+              <span class="section-index">04 / Contact</span>
+              <h2 id="contact-title">Let's make the<br><em>next system.</em></h2>
+              <p>Open to internships, collaborations, and interesting problems. If you have something worth building — reach out.</p>
+            </div>
+
+            <div class="contact-links" data-reveal>
+              <a class="contact-row" href="mailto:loharswapnil807@gmail.com">
+                <span class="contact-label">Email</span>
+                <span class="contact-value">loharswapnil807@gmail.com</span>
+                <span class="contact-arrow" aria-hidden="true">↗</span>
+              </a>
+              <a class="contact-row" href="https://github.com/loharswapnil807-source" target="_blank" rel="noopener noreferrer">
+                <span class="contact-label">GitHub</span>
+                <span class="contact-value">github.com/loharswapnil807-source</span>
+                <span class="contact-arrow" aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer-inner">
+          <a class="brand" href="#hero" aria-label="Back to the top">
+            <span class="brand-mark" aria-hidden="true">SL</span>
+            <span>Swapnil Lohar</span>
+          </a>
+          <p class="footer-meta">© 2026 / Built with HTML, CSS &amp; Three.js</p>
+          <a class="footer-top" href="#top">↑ Top</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
