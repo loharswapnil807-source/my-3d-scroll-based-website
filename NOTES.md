@@ -45,3 +45,10 @@
 - Added education/link/resume TODOs, copy-email behavior, and a `mailto:` contact form fallback.
 - Added a three-state teal/violet/warm theme switch with matching `theme-color` metadata.
 - `npm run build`: PASS.
+
+## Phase 3 — visual system (2026-10-02)
+
+- Replaced the legacy token set with the exact three palette families and CSS `data-theme` states.
+- Set the requested 320px minimum, 44px interactive targets, 14px card radius, typography ceiling, section dividers, and raised surfaces.
+- Added responsive rules for 320px, phone landscape/portrait, tablet, and desktop layouts.
+- Visual screenshots at 375px, 768px, and 1440px: NOT RUN; no browser/screenshot runner is available in this environment. Build and static inspection pass.
