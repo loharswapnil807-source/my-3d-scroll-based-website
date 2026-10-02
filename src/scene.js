@@ -609,6 +609,13 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     if (!isReduced() && motionRequested) updateTargetFromScroll();
   };
 
+  const onNavigationStateChange = () => {
+    anchors = measureAnchors(sections);
+    onScroll();
+    if (isReduced() || !motionRequested) renderStaticFrame();
+    else scheduleFrame();
+  };
+
   const onVisibilityChange = () => {
     active = !document.hidden;
     if (!active) {
@@ -714,7 +721,9 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       disposed = true;
        window.removeEventListener('resize', scheduleResize);
        window.clearTimeout(resizeTimer);
-      window.removeEventListener('scroll', onScroll);
+       window.removeEventListener('scroll', onScroll);
+       window.removeEventListener('hashchange', onNavigationStateChange);
+       window.removeEventListener('popstate', onNavigationStateChange);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('pageshow', onPageShow);
@@ -740,7 +749,9 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   sections.forEach((section) => resizeObserver?.observe(section));
 
    window.addEventListener('resize', scheduleResize, { passive: true });
-  window.addEventListener('scroll', onScroll, { passive: true });
+   window.addEventListener('scroll', onScroll, { passive: true });
+   window.addEventListener('hashchange', onNavigationStateChange);
+   window.addEventListener('popstate', onNavigationStateChange);
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
