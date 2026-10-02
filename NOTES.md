@@ -75,9 +75,15 @@ This file records verified decisions and checks for Swapnil Lohar's static GitHu
 
 Known content gap: the public GitHub repositories named in the previous implementation (`Micro-project`, `Project`, and `done`) are public but their API contents are bakery HTML, not the supplied C/C++ projects. The page therefore does not link those misleading repositories; correct public source URLs are needed if they exist.
 
-## Phase 3 — visual system changes
+## Phase 3 — visual system changes (2026-10-02)
 
-Pending implementation and verification. Required screenshots: 375px, 768px, and 1440px; inspect for overlap, cut-off text, contrast, and uneven spacing.
+- Added the requested palette variables/data-theme states, display/body/mono fallback stacks, raised card surfaces, section dividers, 14px radius, and 44px controls.
+- Added a real bakery screenshot and a two-image classroom-game gallery; technical diagrams remain explicitly diagrams where no authentic screenshot was supplied.
+- Made hero title spans block-level so the primary statement does not collide at desktop widths.
+- Reduced and shifted the wireframe field below 960px so it does not cover mobile/tablet copy; hid the optional manual motion control at the smallest header width while preserving system reduced-motion behavior.
+- Added no-JavaScript mobile navigation visibility and progressive enhancement for the menu.
+- Windows Chrome CDP emulation at CSS 375px verified: `innerWidth=375`, `clientWidth=375`, `scrollWidth=375`, no horizontal overflow, loader hidden, scene ready, menu visible, motion control hidden, hero opacity 1. Screenshot reviewed at `/mnt/c/Users/USER/Desktop/portfolio-cdp-mobile.png`.
+- Windows Chrome headless screenshots were captured at 768px and 1440px during the review; the 768px view had no text overlap after shifting the field, and the 1440px view showed the requested wireframe field. An exact CDP matrix remains in Phase 5.
 
 ## Phase 4 — motion and 3D changes
 

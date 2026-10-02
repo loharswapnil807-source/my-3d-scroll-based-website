@@ -4,7 +4,6 @@ const MOBILE_QUERY = '(pointer: coarse)';
 const DESKTOP_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const SECTION_IDS = ['hero', 'about', 'work', 'research', 'contact'];
-const MARKER_COUNT = 4;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const lerp = (from, to, amount) => from + (to - from) * amount;
@@ -276,13 +275,17 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       3,
     )),
     trackMaterial(new THREE.MeshPhysicalMaterial({
-       color: themeColors.surface,
+      color: themeColors.surface,
       metalness: 0.8,
       roughness: 0.22,
       clearcoat: 0.7,
       clearcoatRoughness: 0.18,
-       emissive: themeColors.accent,
-      emissiveIntensity: 0.9,
+      emissive: themeColors.accent,
+      emissiveIntensity: 0.55,
+      transparent: true,
+      opacity: 0.42,
+      wireframe: true,
+      depthWrite: false,
     })),
   );
   heroObject.add(core);
@@ -324,10 +327,11 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
 
   const markerGeometry = trackGeometry(new THREE.SphereGeometry(0.095, compact ? 8 : 12, compact ? 6 : 8));
   const markerGlowGeometry = trackGeometry(new THREE.SphereGeometry(0.17, compact ? 6 : 8, compact ? 4 : 6));
-  const projectTargets = projectElements().slice(0, MARKER_COUNT);
+  const projectTargets = projectElements();
+  const markerCount = Math.max(1, projectTargets.length);
   const markerEntries = [];
   const markerObjects = [];
-  for (let index = 0; index < MARKER_COUNT; index += 1) {
+  for (let index = 0; index < markerCount; index += 1) {
     const target = projectTargets[index] || null;
     const markerMaterial = trackMaterial(new THREE.MeshStandardMaterial({
       color: themeColors.accent,
@@ -347,7 +351,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     const entry = { marker, glow, material: markerMaterial, target };
     marker.add(glow);
     marker.userData.entry = entry;
-    marker.userData.angle = (index / MARKER_COUNT) * Math.PI * 2;
+    marker.userData.angle = (index / markerCount) * Math.PI * 2;
     marker.userData.radius = 3.7 + (index % 3) * 0.44;
     marker.userData.height = (index % 2 ? 1 : -1) * (0.2 + (index % 4) * 0.18);
     marker.userData.speed = 0.08 + (index % 3) * 0.018;
@@ -467,14 +471,14 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   };
 
   const applyVisuals = (time, motion, delta) => {
-    const mobileFrame = coarseQuery.matches || window.innerWidth < 720;
+    const mobileFrame = coarseQuery.matches || window.innerWidth < 960;
     // Keep the field to the right on narrow screens so it does not sit over copy.
     world.position.set(
-      mobileFrame ? 2.72 + state.x * 0.12 : state.x,
+      mobileFrame ? 4.8 + state.x * 0.08 : state.x,
       mobileFrame ? state.y * 0.72 : state.y,
       0,
     );
-    world.scale.setScalar(state.scale);
+    world.scale.setScalar(mobileFrame ? state.scale * 0.52 : state.scale * 0.86);
     heroObject.rotation.set(
       state.rx + pointerY * 0.08,
       state.ry + pointerX * 0.11 + time * 0.00007 * motion,

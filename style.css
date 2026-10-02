@@ -224,6 +224,7 @@
     .resume-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
+    .motion-toggle { display: none !important; }
     .theme-toggle { width: 44px; overflow: hidden; padding-inline: 8px; font-size: 0; }
     .theme-toggle::before { color: var(--accent); content: "◐"; font-size: 16px; }
     .status-rail { display: none; }
@@ -245,6 +246,10 @@
     *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
     [data-reveal="pending"] { opacity: 1; transform: none; }
     #scene { opacity: .28; }
+    .webgl-unavailable #scene { display: none; }
+  }
+  @media (max-width: 768px) {
+    #scene { opacity: .44; }
   }
   .motion-paused *, .motion-paused *::before, .motion-paused *::after { animation-play-state: paused !important; transition-duration: 1ms !important; }
   .motion-paused [data-reveal] { opacity: 1 !important; transform: none !important; }
