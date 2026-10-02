@@ -31,9 +31,9 @@
 
 ### Open TODOs
 
-- `[TODO: add verified PDF/repository URLs for both research entries]`
-- `[TODO: replace project art with owner-provided screenshots or GIFs]`
-- `[TODO: confirm degree, college, graduation year, LinkedIn URL, and resume URL]`
+- `[TODO: add public repository link for Stickman Typing Fighter]`
+- `[TODO: add public PDF/repository links for both research entries]`
+- `[TODO: provide college name and graduation year if they should appear publicly]`
 - `[TODO: provide Formspree endpoint if a hosted form is preferred]`
 - `[TODO: run Lighthouse and real-device browser matrix; this environment has no visual browser runner]`
 
@@ -45,6 +45,26 @@
 - Added education/link/resume TODOs, copy-email behavior, and a `mailto:` contact form fallback.
 - Added a three-state teal/violet/warm theme switch with matching `theme-color` metadata.
 - `npm run build`: PASS.
+
+## User information update (2026-10-02)
+
+- Added verified status: pursuing a Diploma in Computer Technology.
+- Added achievements: code-a-thon winner, technical debate winner, 1st prize in a demo business pitch, and 1st prize for PPT presentation and explanation.
+- Added the supplied LinkedIn profile and linked the new resume page.
+- Recorded the research venue accurately as college submission submitted to the principal; no college name was invented.
+- Added the supplied Stickman Typing Fighter gameplay screenshot and classroom-game screenshots under `public/assets/`.
+- Added Stickman Typing Fighter as project E because it is a fifth project; existing section numbering remains 01–04.
+- Created `resume.html` from the supplied facts.
+
+## Final update verification (2026-10-02)
+
+- `node --check main.js`: PASS.
+- `node --check src/scene.js`: PASS.
+- `npm run build`: PASS.
+- `git diff --check`: PASS.
+- Built image assets in `dist/assets/`: PASS.
+- Four GitHub project URLs: HTTP 200.
+- LinkedIn request: not verifiable from this environment (returned HTTP 999); URL is the exact profile URL supplied by the owner.
 
 ## Phase 3 — visual system (2026-10-02)
 
