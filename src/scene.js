@@ -13,7 +13,7 @@ const damp = (current, target, lambda, delta) => {
   return lerp(current, target, amount);
 };
 
-const createSeededRandom = (seed = 0x19a6) => {
+const createSeededRandom = (seed = 6566) => {
   let value = seed >>> 0;
   return () => {
     value = (1664525 * value + 1013904223) >>> 0;
@@ -77,8 +77,9 @@ function createStarField(count, trackGeometry, trackMaterial) {
   const random = createSeededRandom();
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
-  const indigo = new THREE.Color(0x6575ff);
-  const cyan = new THREE.Color(0x00d4ff);
+  const theme = getThemeColors();
+  const indigo = new THREE.Color(theme.highlight);
+  const cyan = new THREE.Color(theme.accent);
   const color = new THREE.Color();
 
   for (let index = 0; index < count; index += 1) {
@@ -110,6 +111,16 @@ function createStarField(count, trackGeometry, trackMaterial) {
   const points = new THREE.Points(geometry, material);
   points.frustumCulled = false;
   return points;
+}
+
+function getThemeColors() {
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    bg: styles.getPropertyValue('--bg').trim(),
+    surface: styles.getPropertyValue('--surface').trim(),
+    accent: styles.getPropertyValue('--accent').trim(),
+    highlight: styles.getPropertyValue('--highlight').trim(),
+  };
 }
 
 function setCanvasLayout(canvas, compact) {
@@ -212,6 +223,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   document.documentElement.classList.remove('webgl-unavailable');
 
   let renderer;
+  const themeColors = getThemeColors();
   try {
     renderer = new THREE.WebGLRenderer({
       canvas,
@@ -225,7 +237,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     return null;
   }
 
-  renderer.setClearColor(0x050711, 0);
+  renderer.setClearColor(themeColors.bg, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -244,7 +256,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   };
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x050711, 0.025);
+  scene.fog = new THREE.FogExp2(themeColors.bg, 0.025);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
   camera.position.set(2.7, 0.25, 13.4);
 
@@ -264,12 +276,12 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       3,
     )),
     trackMaterial(new THREE.MeshPhysicalMaterial({
-      color: 0x18295d,
+       color: themeColors.surface,
       metalness: 0.8,
       roughness: 0.22,
       clearcoat: 0.7,
       clearcoatRoughness: 0.18,
-      emissive: 0x06152f,
+       emissive: themeColors.accent,
       emissiveIntensity: 0.9,
     })),
   );
@@ -285,7 +297,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       3,
     )),
     trackMaterial(new THREE.MeshBasicMaterial({
-      color: 0x00d4ff,
+       color: themeColors.accent,
       transparent: true,
       opacity: 0.34,
       wireframe: true,
@@ -297,9 +309,9 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
 
   const ringGeometry = trackGeometry(new THREE.TorusGeometry(3.55, 0.014, 6, compact ? 64 : 96));
   const ringMaterials = [
-    trackMaterial(new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.48 })),
-    trackMaterial(new THREE.MeshBasicMaterial({ color: 0x6b72ff, transparent: true, opacity: 0.28 })),
-    trackMaterial(new THREE.MeshBasicMaterial({ color: 0xb9ecff, transparent: true, opacity: 0.22 })),
+    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.accent, transparent: true, opacity: 0.48 })),
+    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.highlight, transparent: true, opacity: 0.28 })),
+    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.accent, transparent: true, opacity: 0.22 })),
   ];
   const rings = [];
   for (let index = 0; index < ringMaterials.length; index += 1) {
@@ -318,14 +330,14 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   for (let index = 0; index < MARKER_COUNT; index += 1) {
     const target = projectTargets[index] || null;
     const markerMaterial = trackMaterial(new THREE.MeshStandardMaterial({
-      color: 0x8deaff,
-      emissive: 0x0d5b7c,
+      color: themeColors.accent,
+      emissive: themeColors.accent,
       emissiveIntensity: 1.15,
       roughness: 0.2,
       metalness: 0.15,
     }));
     const glowMaterial = trackMaterial(new THREE.MeshBasicMaterial({
-      color: 0x00d4ff,
+      color: themeColors.accent,
       transparent: true,
       opacity: 0.08,
       depthWrite: false,
@@ -351,11 +363,11 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   );
   scene.add(stars);
 
-  scene.add(new THREE.HemisphereLight(0x8ea8ff, 0x02030b, 1.4));
-  const cyanLight = new THREE.PointLight(0x00d4ff, 13, 24, 2);
+  scene.add(new THREE.HemisphereLight(themeColors.accent, themeColors.bg, 1.4));
+  const cyanLight = new THREE.PointLight(themeColors.accent, 13, 24, 2);
   cyanLight.position.set(4.5, 4.5, 6);
   scene.add(cyanLight);
-  const indigoLight = new THREE.PointLight(0x514dff, 9, 25, 2);
+  const indigoLight = new THREE.PointLight(themeColors.highlight, 9, 25, 2);
   indigoLight.position.set(-5, -2.5, 3);
   scene.add(indigoLight);
 
@@ -443,7 +455,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     const width = Math.max(1, window.innerWidth);
     const height = Math.max(1, window.innerHeight);
     const narrow = width < 720;
-    const maxDpr = narrow || coarseQuery.matches ? 1.25 : 1.6;
+    const maxDpr = narrow || coarseQuery.matches ? 1.5 : 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -672,6 +684,11 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   };
 
   let resizeObserver;
+  let resizeTimer = 0;
+  const scheduleResize = () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(resize, 120);
+  };
   const controller = {
     setMotion(enabled) {
       if (disposed) return;
@@ -695,7 +712,8 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       window.removeEventListener('pointermove', updatePointer);
       pointerListening = false;
       disposed = true;
-      window.removeEventListener('resize', resize);
+       window.removeEventListener('resize', scheduleResize);
+       window.clearTimeout(resizeTimer);
       window.removeEventListener('scroll', onScroll);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', onPageHide);
@@ -721,7 +739,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     : null;
   sections.forEach((section) => resizeObserver?.observe(section));
 
-  window.addEventListener('resize', resize, { passive: true });
+   window.addEventListener('resize', scheduleResize, { passive: true });
   window.addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('pagehide', onPageHide);

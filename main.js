@@ -7,6 +7,7 @@
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const MOBILE_MENU_QUERY = '(max-width: 48rem)';
+const THEME_KEY = 'swapnil-portfolio-theme';
 
 const setLoader = (visible, status, progress) => {
   const loader = document.getElementById('loader');
@@ -63,6 +64,41 @@ const setupNavigation = () => {
   mobileQuery.addEventListener?.('change', close);
   window.addEventListener('resize', sync, { passive: true });
   sync();
+};
+
+const setupTheme = () => {
+  const toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  const themes = ['teal', 'violet', 'warm'];
+  const labels = { teal: 'teal', violet: 'violet', warm: 'warm light' };
+  const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'warm' : 'teal';
+  let theme = localStorage.getItem(THEME_KEY) || preferred;
+  const sync = () => {
+    document.documentElement.dataset.theme = theme;
+    toggle.textContent = `Theme: ${labels[theme]}`;
+    toggle.setAttribute('aria-label', `Switch color theme. Current theme: ${labels[theme]}`);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'warm' ? '#FAF7F2' : theme === 'violet' ? '#0B0713' : '#070A12');
+  };
+  toggle.addEventListener('click', () => {
+    theme = themes[(themes.indexOf(theme) + 1) % themes.length];
+    localStorage.setItem(THEME_KEY, theme);
+    sync();
+  });
+  sync();
+};
+
+const setupContact = () => {
+  const button = document.getElementById('copy-email');
+  if (!button) return;
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText('loharswapnil807@gmail.com');
+      button.textContent = 'Copied';
+      window.setTimeout(() => { button.textContent = 'Copy email'; }, 1800);
+    } catch {
+      window.location.href = 'mailto:loharswapnil807@gmail.com';
+    }
+  });
 };
 
 const setupReveals = (reducedMotionQuery) => {
@@ -132,6 +168,14 @@ const setupMotionToggle = (reducedMotionQuery, controller) => {
 const bootScene = async (reducedMotionQuery) => {
   setLoader(true, 'Loading', 'Preparing the field');
 
+  const loaderTimeout = window.setTimeout(() => {
+    if (!document.getElementById('loader')?.hidden) {
+      document.documentElement.classList.add('webgl-unavailable');
+      document.getElementById('scene')?.setAttribute('hidden', '');
+      setLoader(false, 'Fallback', 'Static field');
+    }
+  }, 5000);
+
   try {
     const { initScene } = await import('./src/scene.js');
     const controller = initScene({
@@ -157,6 +201,8 @@ const bootScene = async (reducedMotionQuery) => {
     }
     setLoader(false, 'Ready', 'Static field');
     setupMotionToggle(reducedMotionQuery, null);
+  } finally {
+    window.clearTimeout(loaderTimeout);
   }
 };
 
@@ -164,6 +210,8 @@ const init = () => {
   document.documentElement.classList.add('js-ready');
   const reducedMotionQuery = window.matchMedia(REDUCED_MOTION_QUERY);
   setupNavigation();
+  setupTheme();
+  setupContact();
   setupReveals(reducedMotionQuery);
   setupSectionNavigation();
   bootScene(reducedMotionQuery);

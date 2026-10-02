@@ -36,3 +36,12 @@
 - `[TODO: confirm degree, college, graduation year, LinkedIn URL, and resume URL]`
 - `[TODO: provide Formspree endpoint if a hosted form is preferred]`
 - `[TODO: run Lighthouse and real-device browser matrix; this environment has no visual browser runner]`
+
+## Phase 2 — content and interface fixes (2026-10-02)
+
+- Added canonical, Open Graph, Twitter, favicon, and Person JSON-LD metadata.
+- Added selected-work strip, direct hero positioning, project A–D labels, learning notes, and repository links to the owner’s public repositories.
+- Replaced unsupported publication claims with self-authored labels and visible research-link TODOs.
+- Added education/link/resume TODOs, copy-email behavior, and a `mailto:` contact form fallback.
+- Added a three-state teal/violet/warm theme switch with matching `theme-color` metadata.
+- `npm run build`: PASS.
