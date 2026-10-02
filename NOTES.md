@@ -52,3 +52,26 @@
 - Set the requested 320px minimum, 44px interactive targets, 14px card radius, typography ceiling, section dividers, and raised surfaces.
 - Added responsive rules for 320px, phone landscape/portrait, tablet, and desktop layouts.
 - Visual screenshots at 375px, 768px, and 1440px: NOT RUN; no browser/screenshot runner is available in this environment. Build and static inspection pass.
+
+## Phase 4 — motion and 3D (2026-10-02)
+
+- Kept Three.js lazy-loaded after the initial UI boot and preserved the static fallback when the CDN/import map or WebGL initialization fails.
+- Removed hard-coded scene colors in favor of the active CSS palette, capped renderer DPR at 2, debounced resize work, and kept geometry/material disposal.
+- Added hash/popstate synchronization for direct anchors and back/forward navigation.
+- Visibility, reduced-motion, manual motion pause, context loss, and BFCache pause paths remain active.
+- `npm run build`: PASS.
+
+## Phase 5 — verification status (2026-10-02)
+
+| Check | Status | Result |
+| --- | --- | --- |
+| Production build | PASS | `npm run build` succeeds. |
+| JavaScript syntax | PASS | `node --check main.js` and `node --check src/scene.js` succeed. |
+| 320/375/768/1024/1440 visual layouts | NOT RUN | No browser/screenshot runner is installed. |
+| Chrome / Firefox / iOS Safari / Android Chrome | NOT RUN | No browser/device runner is available. |
+| Lighthouse targets | NOT RUN | Lighthouse is not installed and requires a browser. |
+| CDN blocked / WebGL disabled | STATIC PASS | Import failure and renderer failure route to static fallback in code; not browser-executed here. |
+| Keyboard / reduced motion / screen reader | STATIC PASS | Semantic controls, focus styles, reduced-motion CSS, skip link, landmarks, and labels are present; not browser-executed here. |
+| Rapid scroll / resize / history | STATIC PASS | Debounced resize and scroll/history handlers are present; not browser-executed here. |
+
+The remaining unverified browser/device checks are listed as open TODOs rather than claimed as passing.
