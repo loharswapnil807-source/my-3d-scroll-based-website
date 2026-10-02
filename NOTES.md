@@ -1,97 +1,95 @@
 # Portfolio upgrade notes
 
-## Phase 1 — audit (2026-10-02)
+This file records verified decisions and checks for Swapnil Lohar's static GitHub Pages portfolio.
 
-### Findings
+## Scope and acceptance criteria
 
-| Severity | Location | Finding |
+- Keep the experience plain HTML, CSS, JavaScript, and Three.js; no framework, tracking script, or invented credentials.
+- Preserve an accessible static page when the Three.js CDN, WebGL, or motion APIs fail.
+- Use the three supplied palette families, responsive layouts from 320px up, keyboard navigation, reduced motion, and real project/research links where the supplied sources make them verifiable.
+- Do not publish a graduation year that was not supplied. Current education is a Diploma in Computer Technology, second year, at Government Polytechnic Solapur.
+
+## Phase 1 — current audit (2026-10-02)
+
+### Verified strengths
+
+- `npm run build` passes on the existing branch.
+- `node --check main.js` and `node --check src/scene.js` pass.
+- Existing sections have semantic headings, a skip link, labeled navigation, focus-visible outlines, meaningful alt text for two images, and reduced-motion CSS/scene branches.
+- Existing Three.js resources are tracked and disposed; resize work is already debounced; hash/popstate listeners exist.
+- The supplied project folder, feedback screenshots, research PDF/DOCX files, college, degree status, achievements, LinkedIn URL, and public Stickman repository are available in the local environment.
+
+### Findings to fix
+
+| Severity | Location | Finding | Planned fix |
+| --- | --- | --- | --- |
+| High | `main.js:168-206` | A slow/stalled Three.js import times out visually, but a late import can still initialize the scene and undo the fallback. | Make the loader state one-way; ignore late success after fallback and keep a bounded static state. |
+| High | `src/scene.js:633-638` | WebGL context loss only marks `data-state="lost"`; a blank fixed canvas can remain above the page. | Hide the canvas and activate the CSS fallback on context loss; cleanly restore if the context returns. |
+| High | `style.css:194-200` | At mobile widths JavaScript failure hides both links and the menu button. | Keep a no-JS navigation path visible; progressively enhance the collapsible menu. |
+| High | `main.js:74-85` | `localStorage` exceptions can stop all later initialization. | Guard storage reads/writes. |
+| High | `main.js:76-85`, `src/scene.js:226-370` | CSS theme changes do not update the WebGL materials, fog, lights, or star colors. | Add a theme-change event/controller path. |
+| High | `index.html:226,276`, `public/assets/` | Root/static serving requests `assets/...`, but source assets are only under `public/assets/`; the no-build path returned two 404s in a local HTTP smoke test. | Add a root-served asset path or make deployment mode explicit and test both paths. |
+| Medium | `index.html:172`, `src/scene.js:7,327` | The page contains five projects (A–E) but says four and renders only four project markers. | Say five and derive marker count from project elements. |
+| Medium | `index.html:274-285` | Stickman project has a visible TODO instead of its public repository. | Link `https://github.com/loharswapnil807-source/stickman-with-change-s`. |
+| Medium | `index.html:303-325` | Research cards have disabled status text rather than view/download links. | Publish the supplied PDF/DOCX files with accurate self-authored/college-submission wording. |
+| Medium | `index.html:348-352` | `mailto:` form submission is a fragile browser-dependent fallback. | Keep mailto as the honest fallback, improve the submit path and status, and leave a clearly marked hosted-endpoint TODO if no endpoint exists. |
+| Medium | `index.html:9-18` | Social metadata has no `og:image`/`twitter:image`, and JSON-LD omits LinkedIn. | Add a palette-compliant social preview and complete sameAs metadata. |
+| Medium | `style.css:65-69`, `main.js:144-166` | The dynamically revealed motion toggle has no matching style and can crowd the 320px header. | Style controls and use a compact mobile header. |
+| Low | `main.js:148-155` | Reduced-motion users initially see “Pause motion” even though animation is already disabled. | Make the initial state and label truthful. |
+| Low | `style.css:90,176` | Scroll cue and footer-top links are not guaranteed 44px tap targets. | Add minimum interactive target sizing. |
+| Low | `NOTES.md` previous version | Historical findings were easy to mistake for current status. | This file is now organized as baseline, changes, and verified checks. |
+
+### Audit checks actually run
+
+- `npm run build` — PASS before the new changes.
+- `node --check main.js` — PASS before the new changes.
+- `node --check src/scene.js` — PASS before the new changes.
+- `git diff --check` — PASS before the new changes.
+- Local raw-root HTTP smoke test — HTML/CSS/JS loaded, but `assets/bunk-tracker-terminal.jpg` and `assets/stickman-typing-fighter.png` returned 404 because the root asset path was absent.
+- Public GitHub API checks — `Cake-Shop`, `Micro-project`, `Project`, `done`, and `stickman-with-change-s` are public (HTTP/API responses available).
+- Playwright packages/browsers were downloaded, but the WSL host is missing browser libraries and passwordless `sudo`; real Playwright runs are currently blocked. Windows Chrome headless is available for screenshot smoke checks.
+
+## Source facts to publish
+
+- Name: Swapnil Lohar.
+- Current status: pursuing a Diploma in Computer Technology, second year.
+- College: Government Polytechnic Solapur.
+- Achievements supplied by owner: won a code-a-thon, won a technical debate competition, 1st prize in a demo business pitch event, and 1st prize for PPT presentation and explanation.
+- LinkedIn: `https://www.linkedin.com/in/swapnil-lohar-73a87241b`.
+- Research venue/status: self-authored college submissions submitted to the principal; do not call them externally published.
+- Research source files: Autodesk Maya research PDF, improved research DOCX, and technical report DOCX supplied locally.
+- Stickman repository: `https://github.com/loharswapnil807-source/stickman-with-change-s`.
+- No graduation year was supplied; do not invent one.
+
+## Phase 2 — content and interface changes
+
+Pending implementation and verification.
+
+## Phase 3 — visual system changes
+
+Pending implementation and verification. Required screenshots: 375px, 768px, and 1440px; inspect for overlap, cut-off text, contrast, and uneven spacing.
+
+## Phase 4 — motion and 3D changes
+
+Pending implementation and verification. Required failure paths: CDN blocked, WebGL disabled/context lost, reduced motion, hidden tab, rapid scroll, and resize.
+
+## Phase 5 — verification ledger
+
+| Check | Status | Evidence / gap |
 | --- | --- | --- |
-| High | `index.html:4-17` | Missing canonical URL, Open Graph/Twitter metadata, Person JSON-LD, and favicon. Theme color is the old palette. |
-| High | `index.html:157-240` | All four project visuals are explicitly conceptual illustrations, with no screenshots/GIFs, repository links, or learning notes. |
-| High | `index.html:256-277` | Research entries claim “Published” without a venue and have no View/Download links. |
-| High | `index.html:290-300` | Contact is email/GitHub only; no copy-email action, LinkedIn, resume/CV, or form fallback. |
-| Medium | `index.html:49-53` | No theme switch; motion control is hidden until the 3D module loads. |
-| Medium | `index.html:66-73` | Hero message and action labels are less direct than the requested positioning and CTA hierarchy. |
-| Medium | `index.html:100-111` | “Toolkit” and “Working vocabulary” duplicate each other; “Class 2026” lacks degree and college. |
-| Medium | `index.html:263-274` | “13 Sections” is not a meaningful portfolio statistic and numbering collides with section/project numbering. |
-| Medium | `style.css:68-104` | Uses many legacy colors and spacing values instead of the exact requested token system. |
-| Medium | `style.css:599-635` | Hero type exceeds the requested 40–64px scale. |
-| Medium | `style.css:781-855` / `main.js:132-160` | Loader only resolves after module initialization and has no explicit bounded timeout/status for a stalled CDN. |
-| Medium | `src/scene.js:441-455` | Renderer DPR is capped at 1.6/1.25 rather than the requested maximum of 2; resize work is not debounced. |
-| Medium | `src/scene.js:362-364` | Scene observes page sections but does not pause when the fixed canvas is outside the viewport. |
-| Low | `src/scene.js:595-598` | Scroll state sync is present but does not explicitly re-sync on `hashchange`/back-forward navigation. |
-| Low | `style.css` | Focus styles exist, but several mono labels/buttons are below the requested 14px minimum and need a contrast review. |
+| Build | PASS before changes | `npm run build` |
+| JS syntax | PASS before changes | `node --check main.js`; `node --check src/scene.js` |
+| 320/375/768/1024/1440 layouts | BLOCKED before changes | Playwright host missing libraries; Windows Chrome screenshot path available |
+| Chrome / Firefox / iOS Safari / Android Chrome | NOT RUN | No real device/browser matrix in this environment |
+| Lighthouse targets | NOT RUN | Requires a working browser runner |
+| CDN blocked / WebGL disabled | STATIC REVIEW ONLY | Code path exists but needs browser execution |
+| Keyboard / reduced motion / screen reader | STATIC REVIEW ONLY | Semantics present; interactive execution pending |
+| Rapid scroll / resize / history | STATIC REVIEW ONLY | Handlers present; interactive execution pending |
 
-### Existing checks
+## Open TODOs (do not hide these as completed)
 
-- `npm run build`: PASS before changes.
-- Static WebGL fallback exists and `prefers-reduced-motion` is partially respected.
-- Three.js geometries/materials are tracked and disposed in `src/scene.js`.
-- Public repositories found: `Cake-Shop`, `Micro-project`, `Project`, `done`, and the current site. Research PDFs, degree/college, LinkedIn, resume, and screenshots are not present in the repository.
-
-### Open TODOs
-
-- `[TODO: add public repository link for Stickman Typing Fighter]`
-- `[TODO: add public PDF/repository links for both research entries]`
-- `[TODO: provide college name and graduation year if they should appear publicly]`
-- `[TODO: provide Formspree endpoint if a hosted form is preferred]`
-- `[TODO: run Lighthouse and real-device browser matrix; this environment has no visual browser runner]`
-
-## Phase 2 — content and interface fixes (2026-10-02)
-
-- Added canonical, Open Graph, Twitter, favicon, and Person JSON-LD metadata.
-- Added selected-work strip, direct hero positioning, project A–D labels, learning notes, and repository links to the owner’s public repositories.
-- Replaced unsupported publication claims with self-authored labels and visible research-link TODOs.
-- Added education/link/resume TODOs, copy-email behavior, and a `mailto:` contact form fallback.
-- Added a three-state teal/violet/warm theme switch with matching `theme-color` metadata.
-- `npm run build`: PASS.
-
-## User information update (2026-10-02)
-
-- Added verified status: pursuing a Diploma in Computer Technology.
-- Added achievements: code-a-thon winner, technical debate winner, 1st prize in a demo business pitch, and 1st prize for PPT presentation and explanation.
-- Added the supplied LinkedIn profile and linked the new resume page.
-- Recorded the research venue accurately as college submission submitted to the principal; no college name was invented.
-- Added the supplied Stickman Typing Fighter gameplay screenshot and classroom-game screenshots under `public/assets/`.
-- Added Stickman Typing Fighter as project E because it is a fifth project; existing section numbering remains 01–04.
-- Created `resume.html` from the supplied facts.
-
-## Final update verification (2026-10-02)
-
-- `node --check main.js`: PASS.
-- `node --check src/scene.js`: PASS.
-- `npm run build`: PASS.
-- `git diff --check`: PASS.
-- Built image assets in `dist/assets/`: PASS.
-- Four GitHub project URLs: HTTP 200.
-- LinkedIn request: not verifiable from this environment (returned HTTP 999); URL is the exact profile URL supplied by the owner.
-
-## Phase 3 — visual system (2026-10-02)
-
-- Replaced the legacy token set with the exact three palette families and CSS `data-theme` states.
-- Set the requested 320px minimum, 44px interactive targets, 14px card radius, typography ceiling, section dividers, and raised surfaces.
-- Added responsive rules for 320px, phone landscape/portrait, tablet, and desktop layouts.
-- Visual screenshots at 375px, 768px, and 1440px: NOT RUN; no browser/screenshot runner is available in this environment. Build and static inspection pass.
-
-## Phase 4 — motion and 3D (2026-10-02)
-
-- Kept Three.js lazy-loaded after the initial UI boot and preserved the static fallback when the CDN/import map or WebGL initialization fails.
-- Removed hard-coded scene colors in favor of the active CSS palette, capped renderer DPR at 2, debounced resize work, and kept geometry/material disposal.
-- Added hash/popstate synchronization for direct anchors and back/forward navigation.
-- Visibility, reduced-motion, manual motion pause, context loss, and BFCache pause paths remain active.
-- `npm run build`: PASS.
-
-## Phase 5 — verification status (2026-10-02)
-
-| Check | Status | Result |
-| --- | --- | --- |
-| Production build | PASS | `npm run build` succeeds. |
-| JavaScript syntax | PASS | `node --check main.js` and `node --check src/scene.js` succeed. |
-| 320/375/768/1024/1440 visual layouts | NOT RUN | No browser/screenshot runner is installed. |
-| Chrome / Firefox / iOS Safari / Android Chrome | NOT RUN | No browser/device runner is available. |
-| Lighthouse targets | NOT RUN | Lighthouse is not installed and requires a browser. |
-| CDN blocked / WebGL disabled | STATIC PASS | Import failure and renderer failure route to static fallback in code; not browser-executed here. |
-| Keyboard / reduced motion / screen reader | STATIC PASS | Semantic controls, focus styles, reduced-motion CSS, skip link, landmarks, and labels are present; not browser-executed here. |
-| Rapid scroll / resize / history | STATIC PASS | Debounced resize and scroll/history handlers are present; not browser-executed here. |
-
-The remaining unverified browser/device checks are listed as open TODOs rather than claimed as passing.
+- Run the full Windows Chrome headless interaction/screenshot matrix and inspect screenshots at 375/768/1440.
+- Run Firefox/WebKit or real-device checks when browser dependencies/devices are available.
+- Obtain a Formspree/Web3Forms endpoint if a hosted contact form is desired; mailto fallback remains intentional.
+- Obtain authentic screenshots for projects that have no supplied screenshot. Do not label generated diagrams as screenshots.
+- Confirm whether the owner wants both the original research PDF and the improved DOCX published publicly.
