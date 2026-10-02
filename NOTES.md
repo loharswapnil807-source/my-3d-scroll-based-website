@@ -61,9 +61,19 @@ This file records verified decisions and checks for Swapnil Lohar's static GitHu
 - Stickman repository: `https://github.com/loharswapnil807-source/stickman-with-change-s`.
 - No graduation year was supplied; do not invent one.
 
-## Phase 2 — content and interface changes
+## Phase 2 — content and interface changes (2026-10-02)
 
-Pending implementation and verification.
+- Added verified education: Diploma in Computer Technology, second year, Government Polytechnic Solapur; no graduation year invented.
+- Added owner-supplied achievements and the clean LinkedIn URL.
+- Corrected project descriptions from the supplied C/C++ source: Terminal Game is a Windows console endless-runner; Bunk Tracker is a classroom OOP escape/quiz game; Environment Simulator is a Turbo C++/BGI plant-care graphics game.
+- Added the public Stickman repository link and replaced unsupported research publication language with self-authored college-submission wording.
+- Added downloadable research PDF/DOCX files under `public/documents/` and root `documents/` for both built and no-build serving.
+- Added a real bakery homepage screenshot generated from the supplied local bakery project; preserved the supplied Bunk Tracker and Stickman screenshots. No authentic Terminal Game or Environment Simulator screenshot was invented.
+- Added Open Graph/Twitter image metadata, LinkedIn JSON-LD, `robots.txt`, and `sitemap.xml`.
+- Hardened local-storage theme persistence and mailto contact form behavior; added a truthful form note.
+- `npm run build`, `node --check main.js`, `node --check src/scene.js`, and `git diff --check` pass after the phase changes.
+
+Known content gap: the public GitHub repositories named in the previous implementation (`Micro-project`, `Project`, and `done`) are public but their API contents are bakery HTML, not the supplied C/C++ projects. The page therefore does not link those misleading repositories; correct public source URLs are needed if they exist.
 
 ## Phase 3 — visual system changes
 

@@ -71,17 +71,40 @@ const setupTheme = () => {
   if (!toggle) return;
   const themes = ['teal', 'violet', 'warm'];
   const labels = { teal: 'teal', violet: 'violet', warm: 'warm light' };
-  const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'warm' : 'teal';
-  let theme = localStorage.getItem(THEME_KEY) || preferred;
+  const preference = window.matchMedia('(prefers-color-scheme: light)');
+  const preferred = preference.matches ? 'warm' : 'teal';
+  const readTheme = () => {
+    try {
+      return localStorage.getItem(THEME_KEY);
+    } catch {
+      return null;
+    }
+  };
+  const saveTheme = (value) => {
+    try {
+      localStorage.setItem(THEME_KEY, value);
+    } catch {
+      // Private browsing and blocked storage should not stop the page booting.
+    }
+  };
+  let theme = themes.includes(readTheme()) ? readTheme() : preferred;
+  let userSelectedTheme = Boolean(readTheme());
   const sync = () => {
     document.documentElement.dataset.theme = theme;
     toggle.textContent = `Theme: ${labels[theme]}`;
     toggle.setAttribute('aria-label', `Switch color theme. Current theme: ${labels[theme]}`);
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'warm' ? '#FAF7F2' : theme === 'violet' ? '#0B0713' : '#070A12');
+    window.dispatchEvent(new CustomEvent('portfolio:themechange', { detail: { theme } }));
   };
   toggle.addEventListener('click', () => {
     theme = themes[(themes.indexOf(theme) + 1) % themes.length];
-    localStorage.setItem(THEME_KEY, theme);
+    userSelectedTheme = true;
+    saveTheme(theme);
+    sync();
+  });
+  preference.addEventListener?.('change', (event) => {
+    if (userSelectedTheme) return;
+    theme = event.matches ? 'warm' : 'teal';
     sync();
   });
   sync();
@@ -89,15 +112,29 @@ const setupTheme = () => {
 
 const setupContact = () => {
   const button = document.getElementById('copy-email');
-  if (!button) return;
-  button.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText('loharswapnil807@gmail.com');
-      button.textContent = 'Copied';
-      window.setTimeout(() => { button.textContent = 'Copy email'; }, 1800);
-    } catch {
-      window.location.href = 'mailto:loharswapnil807@gmail.com';
-    }
+  const form = document.querySelector('.contact-form');
+  const formNote = document.getElementById('contact-form-note');
+  if (button) {
+    button.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText('loharswapnil807@gmail.com');
+        button.textContent = 'Copied';
+        window.setTimeout(() => { button.textContent = 'Copy email'; }, 1800);
+      } catch {
+        window.location.href = 'mailto:loharswapnil807@gmail.com';
+      }
+    });
+  }
+  if (!form) return;
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const subject = `Portfolio contact from ${data.get('name')}`;
+    const body = `Name: ${data.get('name')}\\nEmail: ${data.get('email')}\\n\\n${data.get('message')}`;
+    if (formNote) formNote.textContent = 'Opening your email app…';
+    window.location.href = `mailto:${form.dataset.mailto}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   });
 };
 
@@ -145,61 +182,74 @@ const setupMotionToggle = (reducedMotionQuery, controller) => {
   const toggle = document.getElementById('motion-toggle');
   if (!toggle) return;
 
-  let motionEnabled = true;
+  let motionEnabled = !reducedMotionQuery.matches;
   const sync = () => {
-    document.documentElement.classList.toggle('motion-paused', !motionEnabled);
-    toggle.setAttribute('aria-pressed', String(!motionEnabled));
-    toggle.textContent = motionEnabled ? 'Pause motion' : 'Resume motion';
-    toggle.title = reducedMotionQuery.matches
-      ? 'System reduced-motion preference is active'
-      : toggle.textContent;
+    const systemReduced = reducedMotionQuery.matches;
+    document.documentElement.classList.toggle('motion-paused', !motionEnabled || systemReduced);
+    toggle.disabled = systemReduced;
+    toggle.setAttribute('aria-pressed', String(!motionEnabled || systemReduced));
+    toggle.textContent = systemReduced ? 'Motion disabled' : motionEnabled ? 'Pause motion' : 'Resume motion';
+    toggle.title = systemReduced ? 'System reduced-motion preference is active' : toggle.textContent;
   };
 
   toggle.hidden = false;
   toggle.addEventListener('click', () => {
+    if (reducedMotionQuery.matches) return;
     motionEnabled = !motionEnabled;
     controller?.setMotion(motionEnabled);
     sync();
   });
-  reducedMotionQuery.addEventListener?.('change', sync);
+  reducedMotionQuery.addEventListener?.('change', () => {
+    motionEnabled = !reducedMotionQuery.matches;
+    controller?.setMotion(motionEnabled);
+    sync();
+  });
   sync();
 };
 
 const bootScene = async (reducedMotionQuery) => {
   setLoader(true, 'Loading', 'Preparing the field');
-
-  const loaderTimeout = window.setTimeout(() => {
-    if (!document.getElementById('loader')?.hidden) {
-      document.documentElement.classList.add('webgl-unavailable');
-      document.getElementById('scene')?.setAttribute('hidden', '');
-      setLoader(false, 'Fallback', 'Static field');
-    }
-  }, 5000);
-
-  try {
-    const { initScene } = await import('./src/scene.js');
-    const controller = initScene({
-      motionEnabled: true,
-      onReady: () => setLoader(false, 'Ready', 'Field online'),
-    });
-
-    if (!controller) {
-      throw new Error('WebGL scene could not be initialized');
-    }
-
-    setupMotionToggle(reducedMotionQuery, controller);
-    if (!document.getElementById('loader')?.hidden) {
-      setLoader(false, 'Ready', 'Field online');
-    }
-  } catch (error) {
-    console.warn('3D scene unavailable; continuing with the accessible fallback.', error);
+  let fallbackActivated = false;
+  let sceneController = null;
+  const activateFallback = () => {
+    if (fallbackActivated) return;
+    fallbackActivated = true;
     document.documentElement.classList.add('webgl-unavailable');
     const canvas = document.getElementById('scene');
     if (canvas) {
       canvas.hidden = true;
       canvas.dataset.state = 'unavailable';
     }
-    setLoader(false, 'Ready', 'Static field');
+    setLoader(false, 'Fallback', 'Static field');
+  };
+  const loaderTimeout = window.setTimeout(activateFallback, 5000);
+
+  try {
+    const { initScene } = await import('./src/scene.js');
+    // A slow CDN response must not be allowed to undo the static fallback.
+    if (fallbackActivated) {
+      setupMotionToggle(reducedMotionQuery, null);
+      return;
+    }
+    sceneController = initScene({
+      motionEnabled: !reducedMotionQuery.matches,
+      onReady: () => {
+        if (!fallbackActivated) setLoader(false, 'Ready', 'Field online');
+      },
+    });
+
+    if (!sceneController) throw new Error('WebGL scene could not be initialized');
+    if (fallbackActivated) {
+      sceneController.dispose?.();
+      setupMotionToggle(reducedMotionQuery, null);
+      return;
+    }
+    setupMotionToggle(reducedMotionQuery, sceneController);
+    setLoader(false, 'Ready', 'Field online');
+  } catch (error) {
+    console.warn('3D scene unavailable; continuing with the accessible fallback.', error);
+    sceneController?.dispose?.();
+    activateFallback();
     setupMotionToggle(reducedMotionQuery, null);
   } finally {
     window.clearTimeout(loaderTimeout);
