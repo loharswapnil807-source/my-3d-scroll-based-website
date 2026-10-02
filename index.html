@@ -8,28 +8,21 @@
     >
     <title>Swapnil Lohar — Systems, web &amp; 3D</title>
     <link rel="stylesheet" href="style.css">
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.176.0/build/three.module.js"
-        }
-      }
-    </script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <canvas id="scene" aria-hidden="true"></canvas>
 
-    <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader" id="loader" role="status" aria-live="polite" hidden>
       <div class="loader-inner">
         <div class="loader-label">
-          <span>Initializing field</span>
-          <span id="loader-status">01 / 04</span>
+          <span>Loading scene</span>
+          <span id="loader-status">Preparing</span>
         </div>
         <p class="loader-name">Swapnil Lohar</p>
         <div class="loader-line" aria-hidden="true"></div>
-        <p class="loader-progress" id="loader-progress">Preparing the scene</p>
+        <p class="loader-progress" id="loader-progress">Preparing the interface</p>
       </div>
     </div>
 
@@ -45,9 +38,10 @@
             <a href="#work">Work</a>
             <a href="#research">Research</a>
             <a href="#contact">Contact</a>
-          </div>
-          <span class="nav-meta">Portfolio / 2026</span>
-          <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">
+           </div>
+           <span class="nav-meta">Portfolio / 2026</span>
+           <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false" hidden>Pause motion</button>
+           <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">
             <span aria-hidden="true"></span>
           </button>
         </nav>
@@ -62,7 +56,7 @@
           <div class="hero-grid">
             <div class="hero-copy">
               <p class="eyebrow" data-reveal>Developer / researcher</p>
-              <h1 id="hero-title" data-reveal>Building from <em>first principles.</em></h1>
+               <h1 id="hero-title" data-reveal><span class="hero-name">Swapnil Lohar</span><span class="hero-thesis">Building from <em>first principles.</em></span></h1>
               <p class="hero-intro" data-reveal>
                 I'm Swapnil Lohar — a developer working across C, C++, the web, and 3D research. This is a record of the systems I build and the questions I keep following.
               </p>
@@ -70,12 +64,11 @@
                 <a class="button button--primary" href="#work">Enter the work</a>
                 <a class="button" href="#contact">Start a conversation</a>
               </div>
-              <p class="hero-coordinate mono" data-reveal>20° / 73° — systems in motion</p>
             </div>
 
             <div class="hero-orbit" aria-hidden="true">
               <div class="hero-orbit-grid"></div>
-              <span class="hero-orbit-label">Interactive field / 01</span>
+               <span class="hero-orbit-label">Interactive field</span>
             </div>
           </div>
           <a class="scroll-cue" href="#about" aria-label="Scroll to about">Scroll to explore</a>
@@ -110,14 +103,34 @@
                 <h3>Working vocabulary</h3>
                 <span>Languages / tools / areas</span>
               </div>
-              <ul class="skill-list">
-                <li class="skill-item" style="--skill-level: 86%"><span>C</span><small>systems</small></li>
-                <li class="skill-item" style="--skill-level: 82%"><span>C++</span><small>OOP</small></li>
-                <li class="skill-item" style="--skill-level: 78%"><span>HTML / CSS</span><small>web</small></li>
-                <li class="skill-item" style="--skill-level: 68%"><span>Autodesk Maya</span><small>3D</small></li>
-                <li class="skill-item" style="--skill-level: 70%"><span>Git / GitHub</span><small>workflow</small></li>
-                <li class="skill-item" style="--skill-level: 74%"><span>Technical writing</span><small>research</small></li>
-              </ul>
+              <div class="skill-groups">
+                <div class="skill-group">
+                  <h4>Languages</h4>
+                  <ul class="skill-list">
+                    <li>C</li>
+                    <li>C++</li>
+                    <li>HTML / CSS</li>
+                  </ul>
+                </div>
+                <div class="skill-group">
+                  <h4>Tools</h4>
+                  <ul class="skill-list">
+                    <li>VS Code</li>
+                    <li>GCC / G++</li>
+                    <li>Autodesk Maya</li>
+                    <li>Git / GitHub</li>
+                  </ul>
+                </div>
+                <div class="skill-group">
+                  <h4>Areas</h4>
+                  <ul class="skill-list">
+                    <li>Systems Programming</li>
+                    <li>OOP Design</li>
+                    <li>Web Development</li>
+                    <li>Tech Research</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -134,58 +147,89 @@
 
             <div class="project-list">
               <article class="project-chapter" data-project data-reveal aria-labelledby="project-sweets-title">
-                <figure class="project-stage" aria-label="Abstract project visualization for Swapnil's Sweets">
-                  <div class="project-art project-art--warm" aria-hidden="true"><span class="art-glyph">01</span></div>
-                  <figcaption><span>HTML / CSS / 01</span><span>completed</span></figcaption>
+                <figure class="project-stage" aria-label="Conceptual illustration of the bakery website's layered pages; not a screenshot">
+                  <div class="project-art project-art--warm" aria-hidden="true">
+                    <div class="diagram-bakery">
+                      <span class="bakery-layer bakery-layer--base"><i>catalogue</i></span>
+                      <span class="bakery-layer bakery-layer--middle"><i>menu</i></span>
+                      <span class="bakery-layer bakery-layer--top"><i>contact</i></span>
+                      <span class="bakery-flag">warm system</span>
+                    </div>
+                  </div>
+                  <figcaption><span>Conceptual illustration — bakery layers</span><span>HTML / CSS / 01 · completed</span></figcaption>
                 </figure>
                 <div class="project-copy">
-                  <span class="project-number">01 / final microproject</span>
+                   <span class="project-number">01 / Final Microproject</span>
                   <h3 id="project-sweets-title">Swapnil's Sweets</h3>
-                  <p>A fully-featured multi-page bakery website with product catalogue, contact page, feedback form, and multiple menu sections. A consistent warm design system across all pages.</p>
+                   <p>A fully-featured multi-page bakery website. Product catalogue, contact page, feedback form, multiple menu sections. Consistent warm design system across all pages.</p>
                   <ul class="project-tags"><li>HTML5</li><li>CSS3</li><li>Multi-page</li><li>Responsive</li></ul>
-                  <span class="project-link" aria-label="Swapnil's Sweets project record">Project record</span>
                 </div>
               </article>
 
               <article class="project-chapter" data-project data-reveal aria-labelledby="project-terminal-title">
-                <figure class="project-stage" aria-label="Abstract project visualization for Terminal Game">
-                  <div class="project-art project-art--terminal" aria-hidden="true"><span class="art-glyph">02</span></div>
-                  <figcaption><span>C / 02</span><span>completed</span></figcaption>
+                <figure class="project-stage" aria-label="Conceptual illustration of a terminal game state loop; not a real game demo">
+                  <div class="project-art project-art--terminal" aria-hidden="true">
+                    <div class="diagram-terminal">
+                      <span class="terminal-node terminal-node--input">input</span>
+                      <span class="terminal-node terminal-node--update">update</span>
+                      <span class="terminal-node terminal-node--render">render</span>
+                      <span class="terminal-node terminal-node--state">state</span>
+                      <span class="terminal-loop" aria-hidden="true"></span>
+                      <span class="terminal-prompt">&gt; loop</span>
+                    </div>
+                  </div>
+                  <figcaption><span>Conceptual illustration — terminal state loop</span><span>C / 02 · completed</span></figcaption>
                 </figure>
                 <div class="project-copy">
-                  <span class="project-number">02 / C microproject</span>
+                   <span class="project-number">02 / C Microproject</span>
                   <h3 id="project-terminal-title">Terminal Game</h3>
                   <p>A terminal-based game in pure C. Manual memory management, game loop design, input handling, and state machine logic. Standalone — no external libraries.</p>
-                  <ul class="project-tags"><li>C</li><li>Game loop</li><li>State machine</li><li>Terminal I/O</li></ul>
-                  <span class="project-link" aria-label="Terminal Game project record">Project record</span>
+                   <ul class="project-tags"><li>C</li><li>Game Loop</li><li>State Machine</li><li>Terminal I/O</li></ul>
                 </div>
               </article>
 
               <article class="project-chapter" data-project data-reveal aria-labelledby="project-bunk-title">
-                <figure class="project-stage" aria-label="Abstract project visualization for Bunk Tracker">
-                  <div class="project-art project-art--indigo" aria-hidden="true"><span class="art-glyph">03</span></div>
-                  <figcaption><span>C++ / 03</span><span>completed</span></figcaption>
+                <figure class="project-stage" aria-label="Conceptual illustration of Bunk Tracker's object-oriented relationships; not a screenshot">
+                  <div class="project-art project-art--indigo" aria-hidden="true">
+                    <div class="diagram-oop">
+                      <span class="oop-line oop-line--one" aria-hidden="true"></span>
+                      <span class="oop-line oop-line--two" aria-hidden="true"></span>
+                      <span class="oop-line oop-line--three" aria-hidden="true"></span>
+                      <span class="oop-node oop-node--class">class</span>
+                      <span class="oop-node oop-node--student">student</span>
+                      <span class="oop-node oop-node--attendance">attendance</span>
+                      <span class="oop-node oop-node--record">record</span>
+                    </div>
+                  </div>
+                  <figcaption><span>Conceptual illustration — OOP nodes</span><span>C++ / 03 · completed</span></figcaption>
                 </figure>
                 <div class="project-copy">
-                  <span class="project-number">03 / OOP microproject</span>
+                   <span class="project-number">03 / OOP Microproject</span>
                   <h3 id="project-bunk-title">Bunk Tracker</h3>
-                  <p>Object-oriented attendance management in C++. Applies classes, inheritance, encapsulation, and polymorphism to model a real-world student tracking problem.</p>
+                   <p>Object-oriented attendance management in C++. Applies classes, inheritance, encapsulation and polymorphism to model a real-world student tracking problem.</p>
                   <ul class="project-tags"><li>C++</li><li>OOP</li><li>Classes</li><li>Inheritance</li></ul>
-                  <span class="project-link" aria-label="Bunk Tracker project record">Project record</span>
                 </div>
               </article>
 
               <article class="project-chapter" data-project data-reveal aria-labelledby="project-environment-title">
-                <figure class="project-stage" aria-label="Abstract project visualization for Environment Simulator">
-                  <div class="project-art project-art--grid" aria-hidden="true"><span class="art-glyph">04</span></div>
-                  <figcaption><span>C / CGR / 04</span><span>completed</span></figcaption>
+                <figure class="project-stage" aria-label="Conceptual illustration of a wireframe rendering terrain; not a real game demo">
+                  <div class="project-art project-art--grid" aria-hidden="true">
+                    <div class="diagram-terrain">
+                      <span class="terrain-horizon" aria-hidden="true"></span>
+                      <span class="terrain-ridge terrain-ridge--back" aria-hidden="true"></span>
+                      <span class="terrain-ridge terrain-ridge--front" aria-hidden="true"></span>
+                      <span class="terrain-axis terrain-axis--x" aria-hidden="true"></span>
+                      <span class="terrain-axis terrain-axis--y" aria-hidden="true"></span>
+                      <span class="terrain-label">scene / geometry / output</span>
+                    </div>
+                  </div>
+                  <figcaption><span>Conceptual illustration — wireframe terrain</span><span>C / CGR / 04 · completed</span></figcaption>
                 </figure>
                 <div class="project-copy">
-                  <span class="project-number">04 / CGR microproject</span>
+                   <span class="project-number">04 / CGR Microproject</span>
                   <h3 id="project-environment-title">Environment Simulator</h3>
-                  <p>A computer graphics and rendering simulation in C. Covers rendering pipelines, scene geometry, and visual output — all at the language level without frameworks.</p>
+                   <p>A computer graphics &amp; rendering simulation in C. Covers rendering pipelines, scene geometry, and visual output — all at the language level without frameworks.</p>
                   <ul class="project-tags"><li>C</li><li>CGR</li><li>Simulation</li><li>Graphics</li></ul>
-                  <span class="project-link" aria-label="Environment Simulator project record">Project record</span>
                 </div>
               </article>
             </div>
@@ -205,21 +249,23 @@
             <div class="research-list">
               <article class="research-entry" data-reveal>
                 <span class="research-meta">01 / 2026</span>
-                <div>
-                  <h3>Autodesk Maya: Evolution, Architecture, and Impact on the 3D Animation and Visual Effects Industry</h3>
-                  <p>A comprehensive academic paper tracing Maya's origins from Alias|Wavefront through Autodesk acquisition — analysing its node-based dependency graph architecture, MEL/Python scripting ecosystem, rendering pipeline, and impact on film, television, and game production.</p>
-                  <ul class="research-tags"><li>Autodesk Maya</li><li>3D Animation</li><li>VFX Pipeline</li><li>Computer Graphics</li><li>MEL Scripting</li><li>Academic Research</li></ul>
-                </div>
+                 <div>
+                   <h3>Autodesk Maya: Evolution, Architecture, and Impact on the 3D Animation and Visual Effects Industry</h3>
+                   <p>A comprehensive academic paper tracing Maya's origins from Alias|Wavefront through Autodesk acquisition — analysing its node-based dependency graph architecture, MEL/Python scripting ecosystem, rendering pipeline, and profound impact on blockbuster film, television, and game production worldwide.</p>
+                   <ul class="research-tags"><li>Autodesk Maya</li><li>3D Animation</li><li>VFX Pipeline</li><li>Computer Graphics</li><li>MEL Scripting</li><li>Academic Research</li></ul>
+                   <div class="research-foot"><span><strong>13</strong> Sections</span><span><strong>Published</strong> 2026</span><span>Academic Paper</span></div>
+                 </div>
                 <span class="research-type">Research<br>paper</span>
               </article>
 
               <article class="research-entry" data-reveal>
                 <span class="research-meta">02 / 2026</span>
-                <div>
-                  <h3>Autodesk Maya Technical Report</h3>
-                  <p>An accompanying technical report covering hands-on Maya workflows, tools, and production-grade usage patterns for developers and technical directors. Complements the main research paper with applied examples.</p>
-                  <ul class="research-tags"><li>Maya Workflows</li><li>Technical Writing</li><li>3D Production</li></ul>
-                </div>
+                 <div>
+                   <h3>Autodesk Maya Technical Report</h3>
+                   <p>An accompanying technical report covering hands-on Maya workflows, tools, and production-grade usage patterns for developers and technical directors. Complements the main research paper with applied examples.</p>
+                   <ul class="research-tags"><li>Maya Workflows</li><li>Technical Writing</li><li>3D Production</li></ul>
+                   <div class="research-foot"><span><strong>Published</strong> 2026</span><span>Technical Report</span></div>
+                 </div>
                 <span class="research-type">Technical<br>report</span>
               </article>
             </div>
