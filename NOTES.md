@@ -1,0 +1,38 @@
+# Portfolio upgrade notes
+
+## Phase 1 — audit (2026-10-02)
+
+### Findings
+
+| Severity | Location | Finding |
+| --- | --- | --- |
+| High | `index.html:4-17` | Missing canonical URL, Open Graph/Twitter metadata, Person JSON-LD, and favicon. Theme color is the old palette. |
+| High | `index.html:157-240` | All four project visuals are explicitly conceptual illustrations, with no screenshots/GIFs, repository links, or learning notes. |
+| High | `index.html:256-277` | Research entries claim “Published” without a venue and have no View/Download links. |
+| High | `index.html:290-300` | Contact is email/GitHub only; no copy-email action, LinkedIn, resume/CV, or form fallback. |
+| Medium | `index.html:49-53` | No theme switch; motion control is hidden until the 3D module loads. |
+| Medium | `index.html:66-73` | Hero message and action labels are less direct than the requested positioning and CTA hierarchy. |
+| Medium | `index.html:100-111` | “Toolkit” and “Working vocabulary” duplicate each other; “Class 2026” lacks degree and college. |
+| Medium | `index.html:263-274` | “13 Sections” is not a meaningful portfolio statistic and numbering collides with section/project numbering. |
+| Medium | `style.css:68-104` | Uses many legacy colors and spacing values instead of the exact requested token system. |
+| Medium | `style.css:599-635` | Hero type exceeds the requested 40–64px scale. |
+| Medium | `style.css:781-855` / `main.js:132-160` | Loader only resolves after module initialization and has no explicit bounded timeout/status for a stalled CDN. |
+| Medium | `src/scene.js:441-455` | Renderer DPR is capped at 1.6/1.25 rather than the requested maximum of 2; resize work is not debounced. |
+| Medium | `src/scene.js:362-364` | Scene observes page sections but does not pause when the fixed canvas is outside the viewport. |
+| Low | `src/scene.js:595-598` | Scroll state sync is present but does not explicitly re-sync on `hashchange`/back-forward navigation. |
+| Low | `style.css` | Focus styles exist, but several mono labels/buttons are below the requested 14px minimum and need a contrast review. |
+
+### Existing checks
+
+- `npm run build`: PASS before changes.
+- Static WebGL fallback exists and `prefers-reduced-motion` is partially respected.
+- Three.js geometries/materials are tracked and disposed in `src/scene.js`.
+- Public repositories found: `Cake-Shop`, `Micro-project`, `Project`, `done`, and the current site. Research PDFs, degree/college, LinkedIn, resume, and screenshots are not present in the repository.
+
+### Open TODOs
+
+- `[TODO: add verified PDF/repository URLs for both research entries]`
+- `[TODO: replace project art with owner-provided screenshots or GIFs]`
+- `[TODO: confirm degree, college, graduation year, LinkedIn URL, and resume URL]`
+- `[TODO: provide Formspree endpoint if a hosted form is preferred]`
+- `[TODO: run Lighthouse and real-device browser matrix; this environment has no visual browser runner]`
