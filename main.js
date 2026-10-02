@@ -37,10 +37,12 @@ const setupNavigation = () => {
   };
 
   const close = () => {
+    const focusWasInMenu = menu.contains(document.activeElement);
     menu.classList.remove('is-open');
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-label', 'Open navigation');
     sync();
+    if (focusWasInMenu && mobileQuery.matches) toggle.focus();
   };
 
   const openOrClose = () => {
@@ -51,7 +53,12 @@ const setupNavigation = () => {
   };
 
   toggle.addEventListener('click', openOrClose);
-  menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', close));
+  menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
+    close();
+    const target = document.querySelector(link.getAttribute('href'));
+    target?.setAttribute('tabindex', '-1');
+    target?.focus({ preventScroll: true });
+  }));
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') close();
   });
@@ -87,13 +94,14 @@ const setupTheme = () => {
       // Private browsing and blocked storage should not stop the page booting.
     }
   };
-  let theme = themes.includes(readTheme()) ? readTheme() : preferred;
-  let userSelectedTheme = Boolean(readTheme());
+  const savedTheme = readTheme();
+  let theme = themes.includes(savedTheme) ? savedTheme : preferred;
+  let userSelectedTheme = themes.includes(savedTheme);
   const sync = () => {
     document.documentElement.dataset.theme = theme;
     toggle.textContent = `Theme: ${labels[theme]}`;
     toggle.setAttribute('aria-label', `Switch color theme. Current theme: ${labels[theme]}`);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'warm' ? '#FAF7F2' : theme === 'violet' ? '#0B0713' : '#070A12');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
     window.dispatchEvent(new CustomEvent('portfolio:themechange', { detail: { theme } }));
   };
   toggle.addEventListener('click', () => {
@@ -120,9 +128,19 @@ const setupContact = () => {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
         await navigator.clipboard.writeText('loharswapnil807@gmail.com');
         button.textContent = 'Copied';
+        const status = document.getElementById('copy-status');
+        if (status) status.textContent = 'Email address copied.';
         window.setTimeout(() => { button.textContent = 'Copy email'; }, 1800);
       } catch {
-        window.location.href = 'mailto:loharswapnil807@gmail.com';
+        const address = document.querySelector('.contact-value');
+        const range = document.createRange();
+        if (address) {
+          range.selectNodeContents(address);
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.addRange(range);
+        }
+        const status = document.getElementById('copy-status');
+        if (status) status.textContent = 'Clipboard unavailable. Email selected — copy it manually.';
       }
     });
   }
@@ -132,8 +150,8 @@ const setupContact = () => {
     if (!form.reportValidity()) return;
     const data = new FormData(form);
     const subject = `Portfolio contact from ${data.get('name')}`;
-    const body = `Name: ${data.get('name')}\\nEmail: ${data.get('email')}\\n\\n${data.get('message')}`;
-    if (formNote) formNote.textContent = 'Opening your email app…';
+    const body = `Name: ${data.get('name')}\nEmail: ${data.get('email')}\n\n${data.get('message')}`;
+    if (formNote) formNote.textContent = 'Email draft requested. Nothing has been sent: review and send it in your email app. If no app opens, copy the address above.';
     window.location.href = `mailto:${form.dataset.mailto}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   });
 };
@@ -181,6 +199,10 @@ const setupSectionNavigation = () => {
 const setupMotionToggle = (reducedMotionQuery, controller) => {
   const toggle = document.getElementById('motion-toggle');
   if (!toggle) return;
+  if (!controller) {
+    toggle.hidden = true;
+    return;
+  }
 
   let motionEnabled = !reducedMotionQuery.matches;
   const sync = () => {
@@ -233,6 +255,9 @@ const bootScene = async (reducedMotionQuery) => {
     }
     sceneController = initScene({
       motionEnabled: !reducedMotionQuery.matches,
+      onFailure: () => {
+        activateFallback();
+      },
       onReady: () => {
         if (!fallbackActivated) setLoader(false, 'Ready', 'Field online');
       },
@@ -264,7 +289,11 @@ const init = () => {
   setupContact();
   setupReveals(reducedMotionQuery);
   setupSectionNavigation();
-  bootScene(reducedMotionQuery);
+  // Keep the first content paint independent of the optional 3D dependency.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(() => bootScene(reducedMotionQuery), { timeout: 1500 });
+    else window.setTimeout(() => bootScene(reducedMotionQuery), 0);
+  }));
 };
 
 if (document.readyState === 'loading') {

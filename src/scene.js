@@ -131,7 +131,7 @@ function setCanvasLayout(canvas, compact) {
     display: 'block',
     zIndex: '0',
     pointerEvents: 'none',
-    opacity: compact ? '0.58' : '0.9',
+    // Opacity belongs to CSS so reduced-motion and theme rules can override it.
   });
 }
 
@@ -206,7 +206,7 @@ function currentQuality(compact) {
  * Create the atmospheric Three.js layer. The host owns invocation and can
  * pause or dispose the returned controller without this module self-starting.
  */
-export function initScene({ onReady, motionEnabled = true } = {}) {
+export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return null;
 
   const canvas = document.getElementById('scene');
@@ -367,7 +367,8 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   );
   scene.add(stars);
 
-  scene.add(new THREE.HemisphereLight(themeColors.accent, themeColors.bg, 1.4));
+  const hemisphereLight = new THREE.HemisphereLight(themeColors.accent, themeColors.bg, 1.4);
+  scene.add(hemisphereLight);
   const cyanLight = new THREE.PointLight(themeColors.accent, 13, 24, 2);
   cyanLight.position.set(4.5, 4.5, 6);
   scene.add(cyanLight);
@@ -389,9 +390,11 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   let lastDiagnostics = -Infinity;
   let renderedFrames = 0;
   let active = !document.hidden;
+  let canvasVisible = true;
   let bfcachePaused = false;
   let disposed = false;
   let contextLost = false;
+  let failureNotified = false;
   let readyNotified = false;
   let motionRequested = Boolean(motionEnabled);
   let pointerListening = false;
@@ -404,6 +407,8 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     !disposed
     && !contextLost
     && active
+    && canvasVisible
+    && !canvas.hidden
     && !bfcachePaused
     && !document.hidden
     && motionRequested
@@ -414,7 +419,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     if (disposed) return;
     if (contextLost) {
       canvas.dataset.state = 'lost';
-    } else if (!active || bfcachePaused || !motionRequested || document.hidden) {
+    } else if (!active || !canvasVisible || bfcachePaused || !motionRequested || document.hidden) {
       canvas.dataset.state = 'paused';
     } else if (isReduced()) {
       canvas.dataset.state = 'static';
@@ -442,7 +447,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   };
 
   const render = () => {
-    if (disposed || contextLost || document.hidden) return;
+    if (disposed || contextLost || document.hidden || !canvasVisible) return;
     renderer.render(scene, camera);
     renderedFrames += 1;
     updateDiagnostics();
@@ -468,6 +473,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     anchors = measureAnchors(sections);
     if (!isReduced() || !readyNotified) updateTargetFromScroll();
     updateDiagnostics();
+    if (readyNotified && (isReduced() || !motionRequested)) render();
   };
 
   const applyVisuals = (time, motion, delta) => {
@@ -638,15 +644,21 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     event.preventDefault();
     contextLost = true;
     cancelFrame();
+    if (!failureNotified) {
+      failureNotified = true;
+      markUnavailable(canvas);
+      onFailure?.();
+    }
     updateStateAttribute();
   };
 
   const onContextRestored = () => {
-    if (disposed) return;
+    if (disposed || failureNotified) return;
     contextLost = false;
     canvas.hidden = false;
     document.documentElement.classList.remove('webgl-unavailable');
     renderer.resetState?.();
+    canvasVisible = true;
     resize();
     lastTime = performance.now();
     if (isReduced() || !motionRequested) renderStaticFrame();
@@ -694,6 +706,48 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
     if (!isReduced() || !readyNotified) updateTargetFromScroll();
   };
 
+  const onThemeChange = () => {
+    if (disposed) return;
+    const next = getThemeColors();
+    renderer.setClearColor(next.bg, 0);
+    scene.fog.color.set(next.bg);
+    core.material.color.set(next.surface);
+    core.material.emissive.set(next.accent);
+    shell.material.color.set(next.accent);
+    ringMaterials.forEach((material, index) => material.color.set(index === 1 ? next.highlight : next.accent));
+    markerEntries.forEach(({ material, glow }) => {
+      material.color.set(next.accent);
+      material.emissive.set(next.accent);
+      glow.material.color.set(next.accent);
+    });
+    hemisphereLight.color.set(next.accent);
+    hemisphereLight.groundColor.set(next.bg);
+    cyanLight.color.set(next.accent);
+    indigoLight.color.set(next.highlight);
+    const colors = stars.geometry.getAttribute('color');
+    const accent = new THREE.Color(next.accent);
+    const highlight = new THREE.Color(next.highlight);
+    const color = new THREE.Color();
+    for (let index = 0; index < colors.count; index += 1) {
+      color.copy(highlight).lerp(accent, (index % 10) / 12);
+      colors.setXYZ(index, color.r, color.g, color.b);
+    }
+    colors.needsUpdate = true;
+    canvas.dataset.theme = document.documentElement.dataset.theme || 'teal';
+    render();
+  };
+
+  const canvasObserver = typeof IntersectionObserver === 'function'
+    ? new IntersectionObserver(([entry]) => {
+      canvasVisible = entry.isIntersecting;
+      if (!canvasVisible) cancelFrame();
+      else if (canAnimate()) scheduleFrame();
+      else render();
+      updateStateAttribute();
+    })
+    : null;
+  canvasObserver?.observe(canvas);
+
   let resizeObserver;
   let resizeTimer = 0;
   const scheduleResize = () => {
@@ -734,6 +788,8 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
+      canvasObserver?.disconnect();
+      window.removeEventListener('portfolio:themechange', onThemeChange);
       mediaCleanup.forEach((remove) => remove());
       clearHover();
       document.body.classList.remove('scene-past-hero');
@@ -744,6 +800,7 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
       renderer.renderLists?.dispose?.();
       renderer.dispose();
       renderer.forceContextLoss?.();
+      canvas.dataset.state = 'disposed';
     },
   };
 
@@ -769,6 +826,8 @@ export function initScene({ onReady, motionEnabled = true } = {}) {
   }));
   mediaCleanup.push(listenToMediaQuery(desktopPointerQuery, syncPointerListener));
   document.fonts?.ready?.then(measure, () => {});
+  window.addEventListener('portfolio:themechange', onThemeChange);
+  canvas.dataset.theme = document.documentElement.dataset.theme || 'teal';
 
   resize();
   onScroll();

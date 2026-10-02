@@ -85,9 +85,16 @@ Known content gap: the public GitHub repositories named in the previous implemen
 - Windows Chrome CDP emulation at CSS 375px verified: `innerWidth=375`, `clientWidth=375`, `scrollWidth=375`, no horizontal overflow, loader hidden, scene ready, menu visible, motion control hidden, hero opacity 1. Screenshot reviewed at `/mnt/c/Users/USER/Desktop/portfolio-cdp-mobile.png`.
 - Windows Chrome headless screenshots were captured at 768px and 1440px during the review; the 768px view had no text overlap after shifting the field, and the 1440px view showed the requested wireframe field. An exact CDP matrix remains in Phase 5.
 
-## Phase 4 — motion and 3D changes
+## Phase 4 — motion and 3D changes (2026-10-02)
 
-Pending implementation and verification. Required failure paths: CDN blocked, WebGL disabled/context lost, reduced motion, hidden tab, rapid scroll, and resize.
+- Three.js startup is deferred until two animation frames after the initial UI boot; a five-second timeout is one-way and ignores late CDN success after fallback.
+- Context loss now hides the fixed canvas, switches to the static fallback, and notifies the UI. A context restored after a terminal failure does not re-show a possibly blank canvas.
+- Scene materials, fog, lights, and star colors now respond to the CSS theme switch via `portfolio:themechange`.
+- The torus is a quieter wireframe field; marker count derives from all project cards, renderer DPR remains capped at 2 (1.5 on narrow/coarse screens), resize remains debounced, and geometry/material/renderer disposal remains active.
+- Manual motion control now follows the reduced-motion preference and is hidden when there is no working scene controller.
+- Windows Chrome CDP checks: normal scene reaches `ready` with hidden loader at 320, 375, 768, 1024, and 1440px; all five widths had no horizontal overflow and DPR 1.00 in this environment. Theme switch updated both CSS theme and scene theme; mobile menu opened with `aria-expanded=true`; reduced-motion produced `Motion disabled` and no pending reveal blocking; a simulated WebGL context loss produced hidden canvas + `webgl-unavailable`; raw no-build page with the Three.js CDN blocked produced hidden loader + hidden canvas + static fallback.
+
+Known limitation: these are Windows Chrome headless/CDP checks, not real iOS Safari, Android Chrome, Firefox, or WebKit devices.
 
 ## Phase 5 — verification ledger
 
@@ -95,12 +102,15 @@ Pending implementation and verification. Required failure paths: CDN blocked, We
 | --- | --- | --- |
 | Build | PASS before changes | `npm run build` |
 | JS syntax | PASS before changes | `node --check main.js`; `node --check src/scene.js` |
-| 320/375/768/1024/1440 layouts | BLOCKED before changes | Playwright host missing libraries; Windows Chrome screenshot path available |
-| Chrome / Firefox / iOS Safari / Android Chrome | NOT RUN | No real device/browser matrix in this environment |
-| Lighthouse targets | NOT RUN | Requires a working browser runner |
-| CDN blocked / WebGL disabled | STATIC REVIEW ONLY | Code path exists but needs browser execution |
-| Keyboard / reduced motion / screen reader | STATIC REVIEW ONLY | Semantics present; interactive execution pending |
-| Rapid scroll / resize / history | STATIC REVIEW ONLY | Handlers present; interactive execution pending |
+| 320/375/768/1024/1440 layouts | PASS (Chrome CDP) | No horizontal overflow; loader resolves; scene ready; screenshots reviewed at 375/768/1440 |
+| Chrome | PASS (Windows headless/CDP smoke) | Normal startup and interaction paths exercised |
+| Firefox / iOS Safari / Android Chrome | NOT RUN | No real device/browser matrix in this environment |
+| Lighthouse targets | NOT RUN | Lighthouse runner did not complete in this host; no target is claimed |
+| CDN blocked | PASS (raw no-build Chrome CDP) | Hidden canvas/static fallback after blocking unpkg Three.js |
+| WebGL context loss | PASS (simulated Chrome CDP event) | Canvas hidden and fallback class applied |
+| Reduced motion | PASS (Chrome CDP emulation) | Scene static; motion label truthful; reveals do not block content |
+| Keyboard / screen reader | STATIC REVIEW ONLY | Semantic landmarks/focus styles exist; no real screen reader available |
+| Rapid scroll / resize / history | STATIC + partial CDP | Hash navigation and resize handlers present; full stress matrix remains unrun |
 
 ## Open TODOs (do not hide these as completed)
 

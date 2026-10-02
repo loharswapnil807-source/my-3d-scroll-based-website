@@ -1,6 +1,9 @@
 @layer reset, tokens, base, scene, layout, components, sections, states, responsive, motion;
 
 @layer reset {
+  @font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 600; font-display: swap; src: url("assets/fonts/space-grotesk.woff2") format("woff2"); }
+  @font-face { font-family: Inter; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/inter.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/jetbrains-mono.woff2") format("woff2"); }
   *, *::before, *::after { box-sizing: border-box; }
   html, body, h1, h2, h3, h4, p, ul, figure, dl, dd { margin: 0; }
   ul { padding: 0; list-style: none; }
@@ -56,6 +59,7 @@
 }
 
 @layer components {
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .skip-link { position: fixed; z-index: 100; top: 8px; left: 8px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 4px; background: var(--surface); transform: translateY(-180%); }
   .skip-link:focus { transform: translateY(0); }
   .site-header { position: relative; z-index: 10; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); }
