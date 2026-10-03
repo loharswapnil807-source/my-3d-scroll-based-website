@@ -200,3 +200,32 @@ This update supersedes the previous vortex/fragment implementation above. Histor
 - This is an original procedural visual design, not a scientific fluid solver or a claim of globally unique artwork. It morphs vertex positions on a fixed topology, intentionally avoiding separate state meshes.
 - No real-device Safari/Firefox/iOS/Android, manual screen-reader, or hardware FPS certification. SwiftShader is used for rendering checks; spring timing under heavily throttled software rendering can be slower in wall-clock time because the host bounds frame deltas.
 - Next check after deployment: inspect the new coil/Work ribbon and warm Contact on the owner's actual phone and desktop. Existing source-link and mailto-contact limitations remain unchanged.
+
+## Current update — Silicon Journey redesign (2026-10-03)
+
+This frontend redesign supersedes Ember Chrysalis. The user requested a substantially new design following the 8bit.ai example in Vev's 3D website article, with existing content preserved.
+
+### Reference and delivered design
+
+- Inspected the article and frame captures of its 8bit.ai recording: dark graphite, silver geometry, fine luminous data paths, sparse particles, large editorial typography, and travel through a supercomputer-like environment.
+- Rebuilt the visual system in `style.css`: open editorial sections, a four-column project index, understated navigation, chrome-edged screenshot galleries, a split contact layout, and restrained image/cursor interaction. The existing three-theme control remains, with a graphite default and redesigned violet/light palettes.
+- Replaced the active ribbon scene with `src/silicon-world.js`: an original machined aperture, instanced silicon banks, circuit traces, curved animated light paths, transition gates, floating processor layers, and a sparse particle field. Geometry and the studio reflection environment are generated locally; no reference-site models, textures, videos, or branding are copied.
+- `src/journey.js` provides reversible camera travel tied to the actual section anchors, including travel through all five projects. Mobile receives dedicated camera framing. `src/scene.js` retains a single render loop, bounded DPR, reduced motion, pause, visibility/BFCache behavior, context-loss fallback, and resource disposal.
+- Desktop uses 1,100 particles; mobile uses 440 and omits the wider stream halos. The real renderer stayed within the tested 40-call / 90,000-triangle budget. The historical fluid modules remain on disk but are not loaded by the active scene.
+- `index.html`, `resume.html`, `assets/`, `documents/`, and `public/` are byte-for-byte unchanged from the previous commit, verified with `git diff --exit-code HEAD -- index.html resume.html assets documents public`.
+
+### Verification
+
+- `npm test`: **9 passing tests**, including three new meaningful checks for camera travel/reversal, measured section progress/mobile framing, and finite/instanced geometry with exactly-once disposal.
+- `npm run build`: **PASS**, including both HTML entry points. Existing non-fatal Three.js scene chunk warning remains (~512 kB minified / 129 kB gzip).
+- Production-build `tests/browser-smoke.mjs`: **16 passing groups** in a complete run using external Playwright and Chromium/SwiftShader. Covers real shaders/materials, camera progression through every project and reversal, hover/parallax, themes/persistence, pause, reduced motion, mobile detail, BFCache, real WebGL loss, five-width layouts, all six image previews/focus, touch, blocked storage, local assets/documents/resume, and no-JavaScript fallback.
+- Axe-core WCAG 2 A/AA + 2.1 AA: **zero reported violations** in all three palettes at 320/768/1440px, and on the résumé. These scans use reduced motion with WebGL disabled.
+- Inspected captured hero, mobile, all-theme, research, contact, and paired-gallery views. Temporary evidence: `/tmp/omnirush/silicon-qa/`.
+- Rapid theme/viewport checks exposed transient intrinsic-grid overflow; explicit zero-minimum grid tracks and wrapping constraints fixed it. Browser assertions also wait for responsive viewport-unit recalculation before measuring settled layouts.
+- Syntax checks and `git diff --check`: **PASS**.
+
+### Remaining verification limits
+
+- Real-device Safari/Firefox/iOS/Android, manual screen-reader use, and hardware frame-rate testing remain open. SwiftShader checks establish rendering correctness, not device FPS.
+- The contact form still opens an email draft; missing public C/C++ source links and the Terminal Game diagram are preserved as requested.
+- Verification was completed locally before committing. The GitHub Pages deployment requires pushing the update to the deployment branch.

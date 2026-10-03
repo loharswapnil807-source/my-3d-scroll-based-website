@@ -49,13 +49,13 @@ function setupImageArrivals(reducedMotionQuery) {
       target.dataset.arrived = 'true';
       if (!allowed()) return;
       const [horizontal, vertical] = corners[Number(target.dataset.arrivalCorner)];
-      const distance = Math.min(130, window.innerWidth * 0.18);
+      const distance = Math.min(36, window.innerWidth * 0.05);
       // Individual transform properties leave the pointer tilt/hover transform free.
       // Content stays visible if JavaScript or the animation API is unavailable.
       const animation = target.animate([
-        { opacity: 0, translate: `${horizontal * distance}px ${vertical * 100}px`, scale: '0.28', rotate: `${horizontal * 7}deg` },
+        { opacity: 0.65, translate: `${horizontal * distance}px ${vertical * 24}px`, scale: '0.94', rotate: '0deg' },
         { opacity: 1, translate: '0px 0px', scale: '1', rotate: '0deg' },
-      ], { duration: 950, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+      ], { duration: 1000, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
       animations.set(target, animation);
       animation.onfinish = animation.oncancel = () => animations.delete(target);
     });
@@ -86,14 +86,6 @@ function setupPointerGlow(reducedMotionQuery) {
   const glow = document.createElement('div');
   glow.className = 'cursor-glow cursor-effect';
   glow.setAttribute('aria-hidden', 'true');
-  const trails = Array.from({ length: 3 }, (_, index) => {
-    const element = document.createElement('div');
-    element.className = 'cursor-trail cursor-effect';
-    element.setAttribute('aria-hidden', 'true');
-    element.style.setProperty('--trail-opacity', String(0.5 - index * 0.12));
-    document.body.append(element);
-    return { element, x: 0, y: 0 };
-  });
   document.body.append(glow);
 
   let frame = 0;
@@ -115,7 +107,6 @@ function setupPointerGlow(reducedMotionQuery) {
     cancelAnimationFrame(frame);
     frame = 0;
     glow.classList.remove('is-visible', 'is-interactive', 'is-pressed');
-    trails.forEach(({ element }) => element.classList.remove('is-visible'));
     clearSurface();
   };
   const draw = () => {
@@ -125,16 +116,6 @@ function setupPointerGlow(reducedMotionQuery) {
     y += (targetY - y) * 0.36;
     glow.style.transform = `translate3d(${x - 80}px, ${y - 80}px, 0)`;
     let moving = Math.abs(targetX - x) + Math.abs(targetY - y) > 0.2;
-    let leaderX = x;
-    let leaderY = y;
-    trails.forEach((trail) => {
-      trail.x += (leaderX - trail.x) * 0.28;
-      trail.y += (leaderY - trail.y) * 0.28;
-      trail.element.style.transform = `translate3d(${trail.x - 4}px, ${trail.y - 4}px, 0)`;
-      moving ||= Math.abs(leaderX - trail.x) + Math.abs(leaderY - trail.y) > 0.2;
-      leaderX = trail.x;
-      leaderY = trail.y;
-    });
     if (surface && surfaceDirty) {
       const rect = surface.getBoundingClientRect();
       const px = Math.max(0, Math.min(1, (targetX - rect.left) / Math.max(1, rect.width)));
@@ -161,11 +142,9 @@ function setupPointerGlow(reducedMotionQuery) {
     targetY = event.clientY;
     if (!active) {
       x = targetX; y = targetY;
-      trails.forEach((trail) => { trail.x = x; trail.y = y; });
     }
     active = true;
     glow.classList.add('is-visible');
-    trails.forEach(({ element }) => element.classList.add('is-visible'));
     trackSurface(event.target instanceof Element ? event.target : null);
     schedule();
   }, { passive: true });

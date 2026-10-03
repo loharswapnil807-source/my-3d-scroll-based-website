@@ -81,7 +81,7 @@ const setupTheme = () => {
   const themes = ['teal', 'violet', 'warm'];
   const labels = { teal: 'teal', violet: 'violet', warm: 'warm light' };
   const preference = window.matchMedia('(prefers-color-scheme: light)');
-  const preferred = preference.matches ? 'warm' : 'teal';
+  const preferred = 'teal';
   const readTheme = () => {
     try {
       return localStorage.getItem(THEME_KEY);

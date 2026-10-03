@@ -13,28 +13,37 @@ npm install
 npm run dev
 ```
 
-Create a production build with `npm run build`, then preview it with `npm run preview`. Both the portfolio and `resume.html` are included.
+`npm run build` builds both the portfolio and `resume.html`. Use `npm run preview` to serve the production build.
 
-## Interactions and checks
+## Silicon Journey design
 
-- Scroll through **Ember Chrysalis**: one copper ribbon coils into a breathing orb, S-weaves through all five projects, straightens into five connected research lanes, and lifts into a tapered ember farewell. The cilia are anchored to that same ribbon; there are no orbiting fragments or cursor particle clouds.
-- Project images scale in from alternating corners; select an image for the full-size preview. Escape closes the preview.
-- The blurred navbar stays visible while scrolling. Theme switching keeps the teal → violet → warm light cycle.
-- Hover reveals image/card tilt, glowing links, and the existing cursor light/trail. Moving over the organism creates a local dent and spring-settling ripple; hovering a project warms its nearest ribbon segment. System reduced motion and the desktop motion toggle disable animated effects.
-- Teal/violet CSS palettes and interactions are preserved. Warm light uses cream paper/copper ink and a slimmer, unboxed contact section.
+The current frontend takes its visual direction from the **8bit.ai** recording in [Vev's 3D website examples](https://www.vev.design/blog/3d-website-examples/): graphite surfaces, silver geometry, luminous data paths, restrained typography, and camera travel through a supercomputer-like environment.
 
-Run `npm test` for the dependency-free fluid/3D regression tests. See [tests/README.md](tests/README.md) for the production-build browser smoke check and its coverage limits.
+- An original chrome aperture opens into a continuous 110-unit 3D environment: silicon banks, circuit traces, curved light paths, transition gates, and an exploded processor core.
+- Native scrolling drives the perspective camera through Hero, About, all five Work projects, Research, and Contact. Reverse scrolling retraces the camera path. Desktop pointer movement adds restrained parallax.
+- Geometry, reflections, and materials are generated locally with Three.js. There are no external models, texture downloads, video backgrounds, or copied reference-site assets.
+- The existing HTML content, screenshot files, documents, résumé, and links are preserved. Presentation uses larger editorial headings, open layouts, quiet rules, a project index, paired galleries, and a split contact section.
+- The existing theme control cycles through the redesigned teal/graphite, violet, and warm-light palettes. A new visit defaults to graphite; saved choices persist.
+- Images enter with a restrained 94% → 100% scale. All six previews retain Escape-to-close and focus restoration. The cursor treatment is a single fine outline.
 
-## Ember Chrysalis module
+## Scene architecture
 
-`src/fluid-vortex.js` retains the `createFluidVortex()` factory/export so existing imports keep working. It provides `group`, `setTheme(colors)`, `resize(width, height, dpr, compact)`, `setProgress(shape, workTravel)`, `update(timeSeconds, legacyExpansion, energy)`, and `dispose()`.
+- `src/scene.js`: renderer, lighting, environment map, measured section anchors, camera, one render loop, media queries, visibility/BFCache handling, and disposal.
+- `src/journey.js`: deterministic camera stops and section-progress interpolation. Separate framing keeps the mobile aperture above the copy.
+- `src/silicon-world.js`: reusable procedural meshes, instanced silicon banks, stream shaders, particles, palette changes, and owned-resource cleanup.
+- `src/interactions.js`: screenshot previews, image arrivals, and cursor/card interaction.
 
-- `shape` is continuous **0–3**: orb, work ribbon, research circuit, contact embers. `workTravel` is normalized progress through Work.
-- `setPointer(localX, localY, active)` receives a desktop pointer projected into the object's local plane. `setHover(t)` warms a nearby point on the ribbon (`t` = 0–1, `-1` clears). `setScrollVelocity(value)` receives signed normalized velocity; `resetInteraction()` clears forces when pausing/hiding.
-- The existing scene owns the only RAF, camera, measured section anchors, and resource disposal. New progress/interaction inputs are wired in `src/scene.js`; section IDs, anchor measurements and anchor interpolation are unchanged.
-- One instanced membrane draw call (adjacent patches of the same strip), one `LineSegments` cilia call (220 desktop / 110 mobile), and one small icosahedron heart while coiled. The heart fades out after uncoiling. Contact embers reuse membrane patches, not another particle object. Both membrane and cilia use the same GLSL path and pointer deformation.
-- No textures, HDR, postprocessing or additional RAF/listeners inside the module. DPR is capped at 2 desktop / 1.5 mobile. Normal alpha blending retains contrast on warm light. The original `three@0.176.0` import map remains intact.
+DPR is capped at 2 desktop / 1.5 mobile. Mobile reduces particles from 1,100 to 440 and omits the wider stream halos. Reduced motion renders a static composition; manual pause stops the render loop. Context loss or unavailable WebGL leaves the static document usable. No-JavaScript navigation and direct screenshot links remain available.
 
-## GitHub Pages
+The previous fluid/ribbon modules and their unit checks remain in the repository as historical code; they are not imported by the active scene or included in its bundle.
 
-The `feature/immersive-3d-portfolio` branch contains the verified implementation and a GitHub Actions deployment workflow. The root page also retains a browser import map, so the static branch Pages configuration can run the experience without requiring the Vite bundle.
+## Checks and deployment
+
+```bash
+npm test
+npm run build
+```
+
+See [tests/README.md](tests/README.md) for the production-browser smoke suite. `NOTES.md` records verification and remaining content/device gaps.
+
+The GitHub Pages workflow runs tests and builds on pushes to `feature/immersive-3d-portfolio`. The root browser import map also supports static serving without a Vite build.
