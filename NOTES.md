@@ -114,8 +114,52 @@ Known limitation: these are Windows Chrome headless/CDP checks, not real iOS Saf
 
 ## Open TODOs (do not hide these as completed)
 
-- Run the full Windows Chrome headless interaction/screenshot matrix and inspect screenshots at 375/768/1440.
+- The original limited browser matrix is superseded by the 2026-10-03 verification below; real-device coverage remains open.
 - Run Firefox/WebKit or real-device checks when browser dependencies/devices are available.
 - Obtain a Formspree/Web3Forms endpoint if a hosted contact form is desired; mailto fallback remains intentional.
-- Obtain authentic screenshots for projects that have no supplied screenshot. Do not label generated diagrams as screenshots.
+- Obtain an authentic Terminal Game screenshot. The supplied Environment Simulator screenshots are now included; its previous placeholder has been removed.
 - Confirm whether the owner wants both the original research PDF and the improved DOCX published publicly.
+
+## Current update — screenshot motion and fluid vortex (2026-10-03)
+
+### Delivered behavior
+
+- Preserved and completed the pre-existing uncommitted UI/fluid work instead of replacing unrelated work. Local `__agent__/` metadata is ignored, not published.
+- Bunk Tracker now presents terminal quiz and classroom map as distinct, labeled panels with contrasting borders. Environment Simulator uses the owner's real planting and harvest images, also independently labeled.
+- All six project images animate from alternating corners at 28% scale into their full-size positions. Entrances are one-shot per page load, use independent transform properties so hover tilt remains available, and cancel on keyboard focus, reduced motion, or manual pause. JavaScript failure never leaves an image hidden.
+- All six screenshots have full-image dialog previews, Escape/close controls, and focus restoration. Ordinary image links remain the no-JavaScript/modified-click fallback.
+- Stronger pointer-position lighting, image/card tilt, glowing contact/navigation/research links, and a small cursor lens plus three trailing lights. Coarse pointers/reduced motion do not get the cursor effects; the native cursor is retained.
+- Navbar is sticky with a 24px blur. Horizontal overflow uses `clip` rather than creating an accidental scroll container that can defeat sticky positioning.
+- Replaced the wireframe knot and rings with a GPU-deformed, fluid-inspired spindle/vortex: expanded feathered spirals gather into a thin luminous filament and expand again as scrolling progresses. Absolute scroll positions make the shape reversible. This is a procedural visualization, not a claim of a full scientific 3D Navier–Stokes solver; the separate pointer-particle field uses a bounded 2D velocity/pressure grid.
+- 320 desktop / 144 mobile spiral strands, 38 desktop / 16 mobile solid orbiting fragments, and faster rotation/advection. No screenshot textures or per-frame ribbon geometry rebuilding. DPR remains capped; visibility, manual pause, reduced motion, context loss, and disposal paths are retained.
+- **The existing teal → violet → warm light switching and persistence logic is unchanged.** New shaders, objects, and effects consume the existing CSS palette values.
+
+### Defects found during verification and fixed
+
+- Paused/static WebGL scenes now reframe after viewport/orientation changes, without advancing time or restarting animation. Detail-count diagnostics refresh immediately after resize.
+- Runtime WebGL failure now also hides the unusable scene motion control.
+- The production build previously omitted `resume.html` although the contact section linked to it. Vite now builds both HTML entry points, and the deployed Resume link was checked over HTTP.
+- Reduced background opacity below the hero and a mobile gradient mask keep moving strands from overwhelming copy.
+
+### Checks actually run
+
+- `npm test` — **4 passing** Node test cases. Repeated opposite impulses, bounded/finite fluid and particle states, dissipation/reset, reversible shape and animated solid fragments, palette updates, desktop/mobile budgets, DPR caps, and instance disposal.
+- `npm run build` — **PASS**, including `dist/index.html` and `dist/resume.html`.
+- `node --check main.js`, `node --check src/*.js` (each file individually), and `git diff --check` — **PASS**.
+- `node tests/browser-smoke.mjs` with an existing external Playwright installation and Chromium 153/SwiftShader — **19 passing check groups** against the production build served at `http://127.0.0.1:4173`. Browser/library paths were supplied through environment variables; no browser runtime dependency was added to the app.
+  - Actual shader compilation/rendering; scroll expansion → contraction → expansion/reversal; all three CSS/WebGL themes and persistence.
+  - Manual pause; runtime reduced motion; static resize/mobile detail; simulated BFCache events; actual `WEBGL_lose_context` loss and fallback.
+  - 320, 375, 768, 1024, 1440px: no horizontal overflow and the blurred navbar remained at the viewport top through the footer.
+  - Image start scale/different corner directions; six loaded dialog previews; Escape/focus restoration; tilt/glow/cursor trails; mobile menu/focus/Escape; touch previews; blocked storage; 20 rapid resize/scroll reversals.
+  - All local image/document/Resume links returned successful responses; no-JavaScript navigation and direct-image links remained available.
+  - UI stress checks deliberately disabled WebGL to isolate interactions from software GPU speed; the first group tested the real combined WebGL page.
+- `node /tmp/portfolio-accessibility.mjs` — axe-core WCAG 2 A/AA + 2.1 AA scan at desktop width: **zero reported violations in teal, violet, and warm** (reduced motion and WebGL disabled for this automated scan). Not a manual screen-reader audit.
+- Screenshots manually inspected: desktop vortex, all three palettes, mobile reduced-motion composition, both paired galleries, contact hover/cursor. Local evidence is in `/tmp/portfolio-qa/`; it is not committed.
+- GitHub Pages CI now runs `npm test` before building.
+
+### Remaining limits / next concrete check
+
+- Real iOS/Android hardware, Safari, Firefox, screen readers, and hardware FPS were not tested. Headless SwiftShader timing is not a real-device performance result.
+- Vite reports a non-fatal warning for the lazy scene chunk (~515 kB minified / 132 kB gzip, including Three.js). The main UI remains separately loaded.
+- Existing content limitations remain: Terminal Game has a labeled diagram, some C/C++ repositories have no verified public source link, and contact submission opens an email draft rather than sending through a backend.
+- After pushing, verify the GitHub Pages deployment and inspect the new vortex/paired galleries on the owner's actual phone and desktop.

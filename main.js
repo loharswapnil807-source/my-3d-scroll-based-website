@@ -5,6 +5,8 @@
  * disposed independently from navigation, reveals, and accessibility state.
  */
 
+import { setupInteractions } from './src/interactions.js';
+
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const MOBILE_MENU_QUERY = '(max-width: 48rem)';
 const THEME_KEY = 'swapnil-portfolio-theme';
@@ -212,6 +214,7 @@ const setupMotionToggle = (reducedMotionQuery, controller) => {
     toggle.setAttribute('aria-pressed', String(!motionEnabled || systemReduced));
     toggle.textContent = systemReduced ? 'Motion disabled' : motionEnabled ? 'Pause motion' : 'Resume motion';
     toggle.title = systemReduced ? 'System reduced-motion preference is active' : toggle.textContent;
+    window.dispatchEvent(new CustomEvent('portfolio:motionchange', { detail: { enabled: motionEnabled && !systemReduced } }));
   };
 
   toggle.hidden = false;
@@ -257,6 +260,7 @@ const bootScene = async (reducedMotionQuery) => {
       motionEnabled: !reducedMotionQuery.matches,
       onFailure: () => {
         activateFallback();
+        setupMotionToggle(reducedMotionQuery, null);
       },
       onReady: () => {
         if (!fallbackActivated) setLoader(false, 'Ready', 'Field online');
@@ -287,6 +291,7 @@ const init = () => {
   setupNavigation();
   setupTheme();
   setupContact();
+  setupInteractions(reducedMotionQuery);
   setupReveals(reducedMotionQuery);
   setupSectionNavigation();
   // Keep the first content paint independent of the optional 3D dependency.

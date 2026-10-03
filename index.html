@@ -100,10 +100,12 @@
 
          <section class="selected-work" aria-labelledby="selected-work-title">
            <div class="section-inner">
-             <div class="strip-heading"><span class="section-index">Selected work</span><h2 id="selected-work-title">Two systems to start with.</h2></div>
+             <div class="strip-heading"><span class="section-index">Selected work</span><h2 id="selected-work-title">Four systems. Four different worlds.</h2></div>
              <div class="selected-work-grid">
-               <a class="selected-work-card selected-work-card--bakery" href="#project-sweets-title"><span>A / HTML + CSS</span><strong>Swapnil's Sweets</strong><small>Warm, multi-page storefront</small></a>
-               <a class="selected-work-card selected-work-card--terminal" href="#project-terminal-title"><span>B / C</span><strong>Terminal Game</strong><small>Input, state, and render loop</small></a>
+               <a class="selected-work-card project--bakery" href="#project-sweets-title"><span>A / HTML + CSS</span><span class="selected-work-symbol" aria-hidden="true">✳</span><strong>Swapnil's Sweets</strong><small>Warm, multi-page storefront</small><span class="selected-work-open" aria-hidden="true">Explore project ↗</span></a>
+               <a class="selected-work-card project--terminal" href="#project-terminal-title"><span>B / C</span><span class="selected-work-symbol" aria-hidden="true">&gt;_</span><strong>Terminal Game</strong><small>Input, state, and render loop</small><span class="selected-work-open" aria-hidden="true">Explore project ↗</span></a>
+               <a class="selected-work-card project--bunk" href="#project-bunk-title"><span>C / C++ + OOP</span><span class="selected-work-symbol" aria-hidden="true">{ }</span><strong>Bunk Tracker</strong><small>Classroom escape &amp; quiz game</small><span class="selected-work-open" aria-hidden="true">Explore project ↗</span></a>
+               <a class="selected-work-card project--environment" href="#project-environment-title"><span>D / Computer graphics</span><span class="selected-work-symbol" aria-hidden="true">⌘</span><strong>Environment Simulator</strong><small>Plant, nurture, and harvest</small><span class="selected-work-open" aria-hidden="true">Explore project ↗</span></a>
              </div>
            </div>
          </section>
@@ -181,9 +183,11 @@
             </div>
 
             <div class="project-list">
-              <article class="project-chapter" data-project data-reveal aria-labelledby="project-sweets-title">
+              <article class="project-chapter project--bakery" data-project aria-labelledby="project-sweets-title">
                 <figure class="project-stage project-stage--photo" aria-label="Screenshot from the Swapnil's Sweets website">
-                  <img src="assets/sweets-home.png" alt="Swapnil's Sweets bakery website homepage with a product catalogue" loading="lazy" decoding="async">
+                  <a class="project-photo-link" href="assets/sweets-home.png" data-preview data-caption="Swapnil's Sweets — bakery homepage and product catalogue" aria-label="Enlarge Swapnil's Sweets homepage screenshot">
+                    <img src="assets/sweets-home.png" alt="Swapnil's Sweets bakery website homepage with a product catalogue" width="1440" height="900" loading="lazy" decoding="async">
+                  </a>
                   <div class="project-art project-art--warm" aria-hidden="true">
                     <div class="diagram-bakery">
                       <span class="bakery-layer bakery-layer--base"><i>catalogue</i></span>
@@ -204,7 +208,7 @@
                 </div>
               </article>
 
-              <article class="project-chapter" data-project data-reveal aria-labelledby="project-terminal-title">
+              <article class="project-chapter project--terminal" data-project data-reveal aria-labelledby="project-terminal-title">
                 <figure class="project-stage" aria-label="Technical diagram of the terminal game's input and state loop">
                   <div class="project-art project-art--terminal" aria-hidden="true">
                     <div class="diagram-terminal">
@@ -228,13 +232,21 @@
                 </div>
               </article>
 
-               <article class="project-chapter" data-project data-reveal aria-labelledby="project-bunk-title">
+               <article class="project-chapter project--bunk" data-project aria-labelledby="project-bunk-title">
                  <figure class="project-stage project-stage--gallery" aria-label="Screenshots from the C++ classroom OOP game">
                    <div class="project-gallery">
-                     <img src="assets/bunk-tracker-terminal.jpg" alt="C++ classroom game terminal output showing a final question" loading="lazy" decoding="async">
-                     <img src="assets/bunk-tracker-map.jpg" alt="Classroom map for the C++ OOP game with player and question positions" loading="lazy" decoding="async">
+                     <a class="screenshot-panel" href="assets/bunk-tracker-terminal.jpg" data-preview data-caption="Bunk Tracker — terminal quiz and final question" aria-label="Enlarge Bunk Tracker terminal quiz screenshot">
+                       <span class="screenshot-heading"><span>01 / Terminal quiz</span><span aria-hidden="true">↗</span></span>
+                       <img src="assets/bunk-tracker-terminal.jpg" alt="C++ classroom game terminal output showing a final question" width="780" height="560" loading="lazy" decoding="async">
+                       <span class="screenshot-note">Questions, progress &amp; game state</span>
+                     </a>
+                     <a class="screenshot-panel screenshot-panel--alternate" href="assets/bunk-tracker-map.jpg" data-preview data-caption="Bunk Tracker — classroom map with player and question locations" aria-label="Enlarge Bunk Tracker classroom map screenshot">
+                       <span class="screenshot-heading"><span>02 / Classroom map</span><span aria-hidden="true">↗</span></span>
+                       <img src="assets/bunk-tracker-map.jpg" alt="Classroom map for the C++ OOP game with player and question positions" width="700" height="500" loading="lazy" decoding="async">
+                       <span class="screenshot-note">Player position &amp; escape route</span>
+                     </a>
                    </div>
-                   <figcaption><span>Project screenshots — classroom game</span><span>C++ / C · completed</span></figcaption>
+                   <figcaption><span>Two views of the classroom game</span><span>Click either image to expand</span></figcaption>
                 </figure>
                 <div class="project-copy">
                    <span class="project-number">C / OOP Microproject</span>
@@ -246,19 +258,21 @@
                 </div>
               </article>
 
-               <article class="project-chapter" data-project data-reveal aria-labelledby="project-environment-title">
-                <figure class="project-stage" aria-label="Technical diagram of the Environment Simulator's plant-care loop">
-                  <div class="project-art project-art--grid" aria-hidden="true">
-                    <div class="diagram-terrain">
-                      <span class="terrain-horizon" aria-hidden="true"></span>
-                      <span class="terrain-ridge terrain-ridge--back" aria-hidden="true"></span>
-                      <span class="terrain-ridge terrain-ridge--front" aria-hidden="true"></span>
-                      <span class="terrain-axis terrain-axis--x" aria-hidden="true"></span>
-                      <span class="terrain-axis terrain-axis--y" aria-hidden="true"></span>
-                      <span class="terrain-label">scene / geometry / output</span>
-                    </div>
+               <article class="project-chapter project--environment" data-project aria-labelledby="project-environment-title">
+                <figure class="project-stage project-stage--gallery" aria-label="Gameplay screenshots from Environment Simulator">
+                  <div class="project-gallery">
+                    <a class="screenshot-panel" href="assets/environment-start.png" data-preview data-caption="Environment Simulator — start by planting a tree" aria-label="Enlarge Environment Simulator planting screenshot">
+                      <span class="screenshot-heading"><span>01 / Plant a tree</span><span aria-hidden="true">↗</span></span>
+                      <img src="assets/environment-start.png" alt="Environment Simulator starting screen with an empty soil bed and six plant-care controls" width="893" height="572" loading="lazy" decoding="async">
+                      <span class="screenshot-note">The starting state / ready to plant</span>
+                    </a>
+                    <a class="screenshot-panel screenshot-panel--alternate" href="assets/environment-harvest.png" data-preview data-caption="Environment Simulator — grown tree ready for fruit harvest" aria-label="Enlarge Environment Simulator harvest screenshot">
+                      <span class="screenshot-heading"><span>02 / Harvest the fruit</span><span aria-hidden="true">↗</span></span>
+                      <img src="assets/environment-harvest.png" alt="Environment Simulator showing a grown tree with red fruit, a six-second timer, and the pluck-fruit action" width="1336" height="561" loading="lazy" decoding="async">
+                      <span class="screenshot-note">The grown state / ready to harvest</span>
+                    </a>
                   </div>
-                  <figcaption><span>Technical diagram — plant-care loop</span><span>C / CGR / D · completed</span></figcaption>
+                  <figcaption><span>Real gameplay — from seed to fruit</span><span>Click either image to expand</span></figcaption>
                 </figure>
                 <div class="project-copy">
                    <span class="project-number">D / CGR Microproject</span>
@@ -270,9 +284,11 @@
                 </div>
                </article>
 
-               <article class="project-chapter" data-project data-reveal aria-labelledby="project-stickman-title">
+               <article class="project-chapter project--stickman" data-project aria-labelledby="project-stickman-title">
                  <figure class="project-stage" aria-label="Screenshot from Stickman Typing Fighter">
-                   <img src="assets/stickman-typing-fighter.png" alt="Stickman Typing Fighter gameplay screen with a falling letter and fight scene" loading="lazy" decoding="async">
+                   <a class="project-photo-link" href="assets/stickman-typing-fighter.png" data-preview data-caption="Stickman Typing Fighter — falling letters and fight scene" aria-label="Enlarge Stickman Typing Fighter gameplay screenshot">
+                     <img src="assets/stickman-typing-fighter.png" alt="Stickman Typing Fighter gameplay screen with a falling letter and fight scene" width="1362" height="598" loading="lazy" decoding="async">
+                   </a>
                    <figcaption><span>Gameplay screenshot — Stickman Typing Fighter</span><span>HTML / CSS / JS / E · completed</span></figcaption>
                  </figure>
                  <div class="project-copy">
@@ -335,7 +351,7 @@
             </div>
 
              <div class="contact-links" data-reveal>
-               <div class="contact-row"><span class="contact-label">Email</span><span class="contact-value">loharswapnil807@gmail.com</span><button class="copy-email" id="copy-email" type="button">Copy email</button><span class="sr-only" id="copy-status" aria-live="polite"></span></div>
+               <div class="contact-row"><span class="contact-label">Email</span><a class="contact-value contact-email" href="mailto:loharswapnil807@gmail.com">loharswapnil807@gmail.com</a><button class="copy-email" id="copy-email" type="button">Copy email</button><span class="sr-only" id="copy-status" aria-live="polite"></span></div>
               <a class="contact-row" href="https://github.com/loharswapnil807-source" target="_blank" rel="noopener noreferrer">
                 <span class="contact-label">GitHub</span>
                 <span class="contact-value">github.com/loharswapnil807-source</span>
@@ -366,6 +382,11 @@
         </div>
       </footer>
     </div>
+
+    <dialog class="image-preview" id="image-preview" aria-labelledby="preview-caption">
+      <div class="image-preview-toolbar"><p id="preview-caption"></p><button class="preview-close" type="button" aria-label="Close screenshot preview">Close <span aria-hidden="true">×</span></button></div>
+      <img class="image-preview-image" alt="">
+    </dialog>
 
     <script type="module" src="main.js"></script>
   </body>

@@ -23,6 +23,7 @@ Thumbs.db
 
 # OmniRush workspace attachments and local runtime state
 .opencode/
+__agent__/
 
 # Temporary exports
 *.log

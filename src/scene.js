@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createFluidParticles } from './fluid-particles.js';
+import { createFluidVortex } from './fluid-vortex.js';
 
 const MOBILE_QUERY = '(pointer: coarse)';
 const DESKTOP_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
@@ -21,11 +23,11 @@ const createSeededRandom = (seed = 6566) => {
 };
 
 const keyframes = [
-  { x: 2.65, y: 0.15, z: 13.5, scale: 1.0, rx: 0.12, ry: -0.42, rz: 0.02 },
-  { x: 3.25, y: 0.35, z: 14.6, scale: 0.84, rx: 0.7, ry: 0.5, rz: -0.12 },
-  { x: 2.0, y: -0.25, z: 12.25, scale: 1.08, rx: 1.2, ry: 1.35, rz: 0.24 },
-  { x: -1.15, y: 0.52, z: 14.5, scale: 0.84, rx: 1.72, ry: 2.18, rz: -0.34 },
-  { x: 0.1, y: 0.0, z: 16.5, scale: 0.64, rx: 2.25, ry: 3.12, rz: 0.05 },
+  { x: 3.0, y: 0.12, z: 13.5, scale: 1.0, rx: 0.025, ry: 0, rz: -0.035, expansion: 1 },
+  { x: 3.15, y: 0.18, z: 13.8, scale: 0.94, rx: -0.025, ry: 0.4, rz: 0.015, expansion: 0 },
+  { x: 2.7, y: 0.08, z: 14.0, scale: 0.96, rx: 0.035, ry: 0.82, rz: -0.04, expansion: 0.96 },
+  { x: 3.3, y: 0.16, z: 14.0, scale: 0.95, rx: -0.025, ry: 1.5, rz: 0.02, expansion: 0 },
+  { x: 2.4, y: 0.1, z: 15.2, scale: 0.8, rx: 0.02, ry: 2.15, rz: -0.025, expansion: 0.78 },
 ];
 
 function mediaQuery(query) {
@@ -153,6 +155,7 @@ function copyState(target, source) {
   target.rx = source.rx;
   target.ry = source.ry;
   target.rz = source.rz;
+  target.expansion = source.expansion;
 }
 
 function sampleKeyframes(progress, output) {
@@ -169,6 +172,7 @@ function sampleKeyframes(progress, output) {
   output.rx = lerp(from.rx, to.rx, blend);
   output.ry = lerp(from.ry, to.ry, blend);
   output.rz = lerp(from.rz, to.rz, blend);
+  output.expansion = lerp(from.expansion, to.expansion, blend);
 }
 
 function sampleAtSectionAnchors(anchors, output) {
@@ -177,7 +181,9 @@ function sampleAtSectionAnchors(anchors, output) {
     return;
   }
 
-  const focus = window.scrollY + window.innerHeight * 0.48;
+  // Section tops are the shape stops: expanded at the hero/work, a tightly
+  // wrapped filament at about/research. Absolute scroll makes this reversible.
+  const focus = window.scrollY;
   if (focus <= anchors[0]) {
     copyState(output, keyframes[0]);
     return;
@@ -257,7 +263,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(themeColors.bg, 0.025);
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-  camera.position.set(2.7, 0.25, 13.4);
+  camera.position.set(0.06, 0, keyframes[0].z);
 
   const world = new THREE.Group();
   const heroObject = new THREE.Group();
@@ -265,67 +271,15 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   world.add(heroObject, markerOrbit);
   scene.add(world);
 
-  const core = new THREE.Mesh(
-    trackGeometry(new THREE.TorusKnotGeometry(
-      2.15,
-      0.56,
-      compact ? 80 : 128,
-      compact ? 12 : 18,
-      2,
-      3,
-    )),
-    trackMaterial(new THREE.MeshPhysicalMaterial({
-      color: themeColors.surface,
-      metalness: 0.8,
-      roughness: 0.22,
-      clearcoat: 0.7,
-      clearcoatRoughness: 0.18,
-      emissive: themeColors.accent,
-      emissiveIntensity: 0.55,
-      transparent: true,
-      opacity: 0.42,
-      wireframe: true,
-      depthWrite: false,
-    })),
-  );
-  heroObject.add(core);
+  const vortex = createFluidVortex({
+    trackGeometry,
+    trackMaterial,
+    colors: themeColors,
+    compact,
+  });
+  heroObject.add(vortex.group);
 
-  const shell = new THREE.Mesh(
-    trackGeometry(new THREE.TorusKnotGeometry(
-      2.42,
-      0.025,
-      compact ? 64 : 96,
-      compact ? 6 : 8,
-      2,
-      3,
-    )),
-    trackMaterial(new THREE.MeshBasicMaterial({
-       color: themeColors.accent,
-      transparent: true,
-      opacity: 0.34,
-      wireframe: true,
-      depthWrite: false,
-    })),
-  );
-  shell.rotation.set(0.25, -0.3, 0.18);
-  heroObject.add(shell);
-
-  const ringGeometry = trackGeometry(new THREE.TorusGeometry(3.55, 0.014, 6, compact ? 64 : 96));
-  const ringMaterials = [
-    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.accent, transparent: true, opacity: 0.48 })),
-    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.highlight, transparent: true, opacity: 0.28 })),
-    trackMaterial(new THREE.MeshBasicMaterial({ color: themeColors.accent, transparent: true, opacity: 0.22 })),
-  ];
-  const rings = [];
-  for (let index = 0; index < ringMaterials.length; index += 1) {
-    const ring = new THREE.Mesh(ringGeometry, ringMaterials[index]);
-    ring.rotation.set(0.55 + index * 0.47, index * 0.72, index * 0.35);
-    ring.scale.setScalar(1 + index * 0.2);
-    heroObject.add(ring);
-    rings.push(ring);
-  }
-
-  const markerGeometry = trackGeometry(new THREE.SphereGeometry(0.095, compact ? 8 : 12, compact ? 6 : 8));
+  const markerGeometry = trackGeometry(new THREE.OctahedronGeometry(0.095, 0));
   const markerGlowGeometry = trackGeometry(new THREE.SphereGeometry(0.17, compact ? 6 : 8, compact ? 4 : 6));
   const projectTargets = projectElements();
   const markerCount = Math.max(1, projectTargets.length);
@@ -352,9 +306,9 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     marker.add(glow);
     marker.userData.entry = entry;
     marker.userData.angle = (index / markerCount) * Math.PI * 2;
-    marker.userData.radius = 3.7 + (index % 3) * 0.44;
-    marker.userData.height = (index % 2 ? 1 : -1) * (0.2 + (index % 4) * 0.18);
-    marker.userData.speed = 0.08 + (index % 3) * 0.018;
+    marker.userData.radius = 2.8 + (index % 3) * 0.28;
+    marker.userData.height = (index / Math.max(1, markerCount - 1) - 0.5) * 5.6;
+    marker.userData.speed = 0.29 + (index % 3) * 0.048;
     markerOrbit.add(marker);
     markerEntries.push(entry);
     markerObjects.push(marker);
@@ -366,6 +320,13 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     trackMaterial,
   );
   scene.add(stars);
+  const fluidParticles = createFluidParticles({
+    trackGeometry,
+    trackMaterial,
+    colors: themeColors,
+    compact,
+  });
+  scene.add(fluidParticles.points);
 
   const hemisphereLight = new THREE.HemisphereLight(themeColors.accent, themeColors.bg, 1.4);
   scene.add(hemisphereLight);
@@ -387,6 +348,8 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   let hovered = null;
   let animationFrame = 0;
   let lastTime = performance.now();
+  let motionTime = 0;
+  let lastScrollY = window.scrollY;
   let lastDiagnostics = -Infinity;
   let renderedFrames = 0;
   let active = !document.hidden;
@@ -428,15 +391,21 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     }
   };
 
-  const updateDiagnostics = () => {
+  const updateDiagnostics = (force = false) => {
     const now = performance.now();
-    if (now - lastDiagnostics < 1000) return;
+    if (!force && now - lastDiagnostics < 1000) return;
     lastDiagnostics = now;
     canvas.dataset.drawCalls = String(renderer.info.render.calls || 0);
     canvas.dataset.triangles = String(renderer.info.render.triangles || 0);
     canvas.dataset.dpr = Number(renderer.getPixelRatio()).toFixed(2);
     canvas.dataset.frames = String(renderedFrames);
     canvas.dataset.quality = currentQuality(coarseQuery.matches || window.innerWidth < 720);
+    canvas.dataset.particles = String(fluidParticles.count);
+    canvas.dataset.fluidGrid = fluidParticles.gridSize;
+    canvas.dataset.vortexExpansion = vortex.expansion.toFixed(3);
+    canvas.dataset.vortexStrands = String(vortex.strandCount);
+    canvas.dataset.scatterCount = String(vortex.scatterCount);
+    canvas.dataset.sceneShape = 'fluid-vortex';
   };
 
   const notifyReady = () => {
@@ -467,47 +436,53 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     const maxDpr = narrow || coarseQuery.matches ? 1.5 : 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(width, height, false);
+    fluidParticles.resize(width, height, renderer.getPixelRatio(), narrow || coarseQuery.matches);
+    vortex.resize(width, height, renderer.getPixelRatio(), narrow || coarseQuery.matches);
     camera.aspect = width / height;
     camera.fov = narrow ? 47 : 42;
     camera.updateProjectionMatrix();
     anchors = measureAnchors(sections);
     if (!isReduced() || !readyNotified) updateTargetFromScroll();
-    updateDiagnostics();
-    if (readyNotified && (isReduced() || !motionRequested)) render();
+    updateDiagnostics(true);
+    if (readyNotified && (isReduced() || !motionRequested)) {
+      // Reframe a paused/static scene after orientation or viewport changes,
+      // without advancing its clock or starting an animation loop.
+      applyVisuals(motionTime, isReduced() ? 0 : 1, 0);
+      render();
+    }
   };
 
   const applyVisuals = (time, motion, delta) => {
     const mobileFrame = coarseQuery.matches || window.innerWidth < 960;
-    // Keep the field to the right on narrow screens so it does not sit over copy.
+    // Keep a glimpse of the upright silhouette at the right edge on mobile,
+    // using the camera's visible width rather than pushing it entirely offscreen.
+    const viewWidth = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * state.z * camera.aspect;
     world.position.set(
-      mobileFrame ? 4.8 + state.x * 0.08 : state.x,
-      mobileFrame ? state.y * 0.72 : state.y,
+      mobileFrame ? viewWidth * 0.31 : state.x,
+      mobileFrame ? 0.45 + state.y * 0.5 : state.y,
       0,
     );
-    world.scale.setScalar(mobileFrame ? state.scale * 0.52 : state.scale * 0.86);
+    world.scale.setScalar(state.scale * (mobileFrame ? 0.52 : 0.86));
     heroObject.rotation.set(
-      state.rx + pointerY * 0.08,
-      state.ry + pointerX * 0.11 + time * 0.00007 * motion,
-      state.rz,
+      state.rx + pointerY * 0.025,
+      state.ry + pointerX * 0.08,
+      state.rz + pointerX * 0.012,
     );
-    core.rotation.x += delta * 0.12 * motion;
-    core.rotation.y += delta * 0.2 * motion;
-    shell.rotation.y -= delta * 0.13 * motion;
-    for (let index = 0; index < rings.length; index += 1) {
-      rings[index].rotation.z += delta * (0.045 + index * 0.018) * (index % 2 ? 1 : -1) * motion;
-    }
-    stars.rotation.y += delta * 0.004 * motion;
+    vortex.update(time * 0.001, state.expansion, fluidParticles.energy * motion);
+    stars.rotation.y += delta * 0.009 * motion;
     stars.rotation.x = pointerY * 0.018;
 
     for (let index = 0; index < markerEntries.length; index += 1) {
       const entry = markerEntries[index];
       const { angle, radius, height, speed } = entry.marker.userData;
-      const orbitAngle = angle + time * 0.001 * speed * motion;
+      const orbitAngle = angle + time * 0.001 * speed * motion + height * 0.45;
+      const orbitRadius = radius * (0.55 + state.expansion * 0.45);
       entry.marker.position.set(
-        Math.cos(orbitAngle) * radius,
-        height + Math.sin(time * 0.001 * (0.45 + index * 0.025)) * 0.11 * motion,
-        Math.sin(orbitAngle) * radius * 0.5,
+        Math.cos(orbitAngle) * orbitRadius,
+        height + Math.sin(time * 0.001 * (0.7 + index * 0.04)) * 0.2 * motion,
+        Math.sin(orbitAngle) * orbitRadius * 0.7,
       );
+      entry.marker.rotation.set(orbitAngle * 0.6, orbitAngle, orbitAngle * 0.3);
       entry.glow.scale.setScalar(1 + Math.sin(time * 0.0014 + index) * 0.12 * motion);
     }
 
@@ -515,9 +490,9 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     // would feed an offset back into the next frame and cause camera drift.
     const cameraTargetX = state.x * 0.02 + pointerX * 0.32;
     const cameraTargetY = state.y * 0.02 - pointerY * 0.24;
-    camera.position.x = damp(camera.position.x, cameraTargetX, 3.6, delta);
-    camera.position.y = damp(camera.position.y, cameraTargetY, 3.6, delta);
-    camera.position.z = damp(camera.position.z, state.z, 3.6, delta);
+    camera.position.x = motion ? damp(camera.position.x, cameraTargetX, 3.6, delta) : cameraTargetX;
+    camera.position.y = motion ? damp(camera.position.y, cameraTargetY, 3.6, delta) : cameraTargetY;
+    camera.position.z = motion ? damp(camera.position.z, state.z, 3.6, delta) : state.z;
     camera.lookAt(world.position.x * 0.12, world.position.y * 0.1, 0);
   };
 
@@ -542,6 +517,8 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
 
     const delta = Math.min(0.05, Math.max(0, (time - lastTime) / 1000));
     lastTime = time;
+    motionTime += delta * 1000;
+    fluidParticles.update(delta);
     state.x = damp(state.x, targetState.x, 4.6, delta);
     state.y = damp(state.y, targetState.y, 4.6, delta);
     state.z = damp(state.z, targetState.z, 4.6, delta);
@@ -549,9 +526,10 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     state.rx = damp(state.rx, targetState.rx, 4.6, delta);
     state.ry = damp(state.ry, targetState.ry, 4.6, delta);
     state.rz = damp(state.rz, targetState.rz, 4.6, delta);
+    state.expansion = damp(state.expansion, targetState.expansion, 5.2, delta);
     pointerX = damp(pointerX, pointerTargetX, 5.5, delta);
     pointerY = damp(pointerY, pointerTargetY, 5.5, delta);
-    applyVisuals(time, 1, delta);
+    applyVisuals(motionTime, 1, delta);
     render();
     scheduleFrame();
   };
@@ -564,6 +542,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     pointerY = 0;
     pointerTargetX = 0;
     pointerTargetY = 0;
+    fluidParticles.resetInteraction();
     applyVisuals(0, 0, 0);
     render();
     updateStateAttribute();
@@ -578,9 +557,14 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   };
 
   const updatePointer = (event) => {
-    if (!pointerListening || !canAnimate()) return;
+    if (!pointerListening || event.pointerType === 'touch' || !canAnimate()) return;
     pointerTargetX = clamp((event.clientX / Math.max(1, window.innerWidth) - 0.5) * 2, -1, 1);
     pointerTargetY = clamp((event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2, -1, 1);
+    fluidParticles.pointerMove(
+      (pointerTargetX + 1) * 0.5,
+      (1 - pointerTargetY) * 0.5,
+      performance.now(),
+    );
     pointerNdc.set(pointerTargetX, -pointerTargetY);
     raycaster.setFromCamera(pointerNdc, camera);
     const hit = raycaster.intersectObjects(markerObjects, false)[0];
@@ -592,6 +576,13 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     hovered.material.emissiveIntensity = 2.3;
     hovered.marker.scale.setScalar(1.45);
     hovered.target?.classList.add('is-3d-hovered');
+  };
+
+  const onPointerLeave = () => {
+    clearHover();
+    pointerTargetX = 0;
+    pointerTargetY = 0;
+    fluidParticles.pointerLeave();
   };
 
   const syncPointerListener = () => {
@@ -606,17 +597,23 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     pointerListening = shouldListen;
     if (shouldListen) {
       window.addEventListener('pointermove', updatePointer, { passive: true });
+      document.addEventListener('pointerleave', onPointerLeave, { passive: true });
+      window.addEventListener('blur', onPointerLeave);
     } else {
       window.removeEventListener('pointermove', updatePointer);
-      clearHover();
-      pointerTargetX = 0;
-      pointerTargetY = 0;
+      document.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('blur', onPointerLeave);
+      onPointerLeave();
+      fluidParticles.resetInteraction();
     }
   };
 
   const onScroll = () => {
+    const scrollDelta = window.scrollY - lastScrollY;
+    lastScrollY = window.scrollY;
     document.body.classList.toggle('scene-past-hero', window.scrollY > window.innerHeight * 0.72);
     if (!isReduced() && motionRequested) updateTargetFromScroll();
+    if (canAnimate()) fluidParticles.scroll(scrollDelta, window.innerHeight);
   };
 
   const onNavigationStateChange = () => {
@@ -630,6 +627,8 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     active = !document.hidden;
     if (!active) {
       cancelFrame();
+      onPointerLeave();
+      fluidParticles.resetInteraction();
       updateStateAttribute();
       return;
     }
@@ -644,6 +643,8 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     event.preventDefault();
     contextLost = true;
     cancelFrame();
+    onPointerLeave();
+    fluidParticles.resetInteraction();
     if (!failureNotified) {
       failureNotified = true;
       markUnavailable(canvas);
@@ -671,6 +672,8 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       bfcachePaused = true;
       active = false;
       cancelFrame();
+      onPointerLeave();
+      fluidParticles.resetInteraction();
       updateStateAttribute();
       return;
     }
@@ -709,12 +712,10 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   const onThemeChange = () => {
     if (disposed) return;
     const next = getThemeColors();
+    fluidParticles.setTheme(next);
+    vortex.setTheme(next);
     renderer.setClearColor(next.bg, 0);
     scene.fog.color.set(next.bg);
-    core.material.color.set(next.surface);
-    core.material.emissive.set(next.accent);
-    shell.material.color.set(next.accent);
-    ringMaterials.forEach((material, index) => material.color.set(index === 1 ? next.highlight : next.accent));
     markerEntries.forEach(({ material, glow }) => {
       material.color.set(next.accent);
       material.emissive.set(next.accent);
@@ -740,8 +741,11 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   const canvasObserver = typeof IntersectionObserver === 'function'
     ? new IntersectionObserver(([entry]) => {
       canvasVisible = entry.isIntersecting;
-      if (!canvasVisible) cancelFrame();
-      else if (canAnimate()) scheduleFrame();
+      if (!canvasVisible) {
+        cancelFrame();
+        onPointerLeave();
+        fluidParticles.resetInteraction();
+      } else if (canAnimate()) scheduleFrame();
       else render();
       updateStateAttribute();
     })
@@ -761,6 +765,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       syncPointerListener();
       if (!motionRequested) {
         cancelFrame();
+        fluidParticles.resetInteraction();
         updateStateAttribute();
         return;
       }
@@ -775,6 +780,9 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       if (disposed) return;
       cancelFrame();
       window.removeEventListener('pointermove', updatePointer);
+      document.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('blur', onPointerLeave);
+      fluidParticles.resetInteraction();
       pointerListening = false;
       disposed = true;
        window.removeEventListener('resize', scheduleResize);
@@ -794,6 +802,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       clearHover();
       document.body.classList.remove('scene-past-hero');
 
+      vortex.dispose();
       const disposedTextures = new Set();
       resources.materials.forEach((material) => disposeMaterial(material, disposedTextures));
       resources.geometries.forEach((geometry) => geometry.dispose());
