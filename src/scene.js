@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { createFluidParticles } from './fluid-particles.js';
 import { createFluidVortex } from './fluid-vortex.js';
 
 const MOBILE_QUERY = '(pointer: coarse)';
@@ -14,20 +13,12 @@ const damp = (current, target, lambda, delta) => {
   return lerp(current, target, amount);
 };
 
-const createSeededRandom = (seed = 6566) => {
-  let value = seed >>> 0;
-  return () => {
-    value = (1664525 * value + 1013904223) >>> 0;
-    return value / 4294967296;
-  };
-};
-
 const keyframes = [
-  { x: 3.0, y: 0.12, z: 13.5, scale: 1.0, rx: 0.025, ry: 0, rz: -0.035, expansion: 1 },
-  { x: 3.15, y: 0.18, z: 13.8, scale: 0.94, rx: -0.025, ry: 0.4, rz: 0.015, expansion: 0 },
-  { x: 2.7, y: 0.08, z: 14.0, scale: 0.96, rx: 0.035, ry: 0.82, rz: -0.04, expansion: 0.96 },
-  { x: 3.3, y: 0.16, z: 14.0, scale: 0.95, rx: -0.025, ry: 1.5, rz: 0.02, expansion: 0 },
-  { x: 2.4, y: 0.1, z: 15.2, scale: 0.8, rx: 0.02, ry: 2.15, rz: -0.025, expansion: 0.78 },
+  { x: 3.0, y: 0.12, z: 13.5, scale: 1.0, rx: 0.025, ry: 0, rz: -0.035, expansion: 1, progress: 0 },
+  { x: 3.15, y: 0.18, z: 13.8, scale: 0.94, rx: -0.025, ry: 0.4, rz: 0.015, expansion: 0, progress: 0.48 },
+  { x: 2.7, y: 0.08, z: 14.0, scale: 0.96, rx: 0.035, ry: 0.82, rz: -0.04, expansion: 0.96, progress: 1 },
+  { x: 3.3, y: 0.16, z: 14.0, scale: 0.95, rx: -0.025, ry: 1.5, rz: 0.02, expansion: 0, progress: 2 },
+  { x: 2.4, y: 0.1, z: 15.2, scale: 0.8, rx: 0.02, ry: 2.15, rz: -0.025, expansion: 0.78, progress: 3 },
 ];
 
 function mediaQuery(query) {
@@ -64,54 +55,8 @@ function sectionElements() {
   return [...document.querySelectorAll('[data-scene-section], main > section, section')];
 }
 
-function projectElements() {
-  const explicit = [...document.querySelectorAll('[data-project]')];
-  if (explicit.length) return explicit;
-  return [...document.querySelectorAll('.card')];
-}
-
 function measureAnchors(sections) {
   return sections.map((section) => section.getBoundingClientRect().top + window.scrollY);
-}
-
-function createStarField(count, trackGeometry, trackMaterial) {
-  const random = createSeededRandom();
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const theme = getThemeColors();
-  const indigo = new THREE.Color(theme.highlight);
-  const cyan = new THREE.Color(theme.accent);
-  const color = new THREE.Color();
-
-  for (let index = 0; index < count; index += 1) {
-    const angle = random() * Math.PI * 2;
-    const radius = 9 + random() * 17;
-    const y = (random() - 0.5) * 17;
-    const depth = Math.sqrt(Math.max(0, 1 - Math.min(1, Math.abs(y) / 18)));
-    positions[index * 3] = Math.cos(angle) * radius * depth;
-    positions[index * 3 + 1] = y;
-    positions[index * 3 + 2] = Math.sin(angle) * radius - 5;
-
-    color.copy(indigo).lerp(cyan, random() * 0.75);
-    colors[index * 3] = color.r;
-    colors[index * 3 + 1] = color.g;
-    colors[index * 3 + 2] = color.b;
-  }
-
-  const geometry = trackGeometry(new THREE.BufferGeometry());
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const material = trackMaterial(new THREE.PointsMaterial({
-    size: 0.045,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.52,
-    depthWrite: false,
-    sizeAttenuation: true,
-  }));
-  const points = new THREE.Points(geometry, material);
-  points.frustumCulled = false;
-  return points;
 }
 
 function getThemeColors() {
@@ -156,6 +101,7 @@ function copyState(target, source) {
   target.ry = source.ry;
   target.rz = source.rz;
   target.expansion = source.expansion;
+  target.progress = source.progress;
 }
 
 function sampleKeyframes(progress, output) {
@@ -173,6 +119,7 @@ function sampleKeyframes(progress, output) {
   output.ry = lerp(from.ry, to.ry, blend);
   output.rz = lerp(from.rz, to.rz, blend);
   output.expansion = lerp(from.expansion, to.expansion, blend);
+  output.progress = lerp(from.progress, to.progress, blend);
 }
 
 function sampleAtSectionAnchors(anchors, output) {
@@ -181,8 +128,8 @@ function sampleAtSectionAnchors(anchors, output) {
     return;
   }
 
-  // Section tops are the shape stops: expanded at the hero/work, a tightly
-  // wrapped filament at about/research. Absolute scroll makes this reversible.
+  // Existing section-top anchors and interpolation stay unchanged. Shape
+  // progress adds choreography without introducing new scroll triggers.
   const focus = window.scrollY;
   if (focus <= anchors[0]) {
     copyState(output, keyframes[0]);
@@ -267,8 +214,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
 
   const world = new THREE.Group();
   const heroObject = new THREE.Group();
-  const markerOrbit = new THREE.Group();
-  world.add(heroObject, markerOrbit);
+  world.add(heroObject);
   scene.add(world);
 
   const vortex = createFluidVortex({
@@ -279,54 +225,12 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   });
   heroObject.add(vortex.group);
 
-  const markerGeometry = trackGeometry(new THREE.OctahedronGeometry(0.095, 0));
-  const markerGlowGeometry = trackGeometry(new THREE.SphereGeometry(0.17, compact ? 6 : 8, compact ? 4 : 6));
-  const projectTargets = projectElements();
-  const markerCount = Math.max(1, projectTargets.length);
-  const markerEntries = [];
-  const markerObjects = [];
-  for (let index = 0; index < markerCount; index += 1) {
-    const target = projectTargets[index] || null;
-    const markerMaterial = trackMaterial(new THREE.MeshStandardMaterial({
-      color: themeColors.accent,
-      emissive: themeColors.accent,
-      emissiveIntensity: 1.15,
-      roughness: 0.2,
-      metalness: 0.15,
-    }));
-    const glowMaterial = trackMaterial(new THREE.MeshBasicMaterial({
-      color: themeColors.accent,
-      transparent: true,
-      opacity: 0.08,
-      depthWrite: false,
-    }));
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    const glow = new THREE.Mesh(markerGlowGeometry, glowMaterial);
-    const entry = { marker, glow, material: markerMaterial, target };
-    marker.add(glow);
-    marker.userData.entry = entry;
-    marker.userData.angle = (index / markerCount) * Math.PI * 2;
-    marker.userData.radius = 2.8 + (index % 3) * 0.28;
-    marker.userData.height = (index / Math.max(1, markerCount - 1) - 0.5) * 5.6;
-    marker.userData.speed = 0.29 + (index % 3) * 0.048;
-    markerOrbit.add(marker);
-    markerEntries.push(entry);
-    markerObjects.push(marker);
-  }
-
-  const stars = createStarField(
-    compact ? 90 : reducedMotionQuery.matches ? 140 : 280,
-    trackGeometry,
-    trackMaterial,
-  );
-  scene.add(stars);
-  const fluidParticles = createFluidParticles({
-    trackGeometry,
-    trackMaterial,
-    colors: themeColors,
-    compact,
-  });
-  scene.add(fluidParticles.points);
+  // No orbiting markers, stars, or cursor-particle cloud: only the organism.
+  let scrollEnergy = 0;
+  const resetInteraction = () => {
+    scrollEnergy = 0;
+    vortex.resetInteraction();
+  };
 
   const hemisphereLight = new THREE.HemisphereLight(themeColors.accent, themeColors.bg, 1.4);
   scene.add(hemisphereLight);
@@ -345,7 +249,10 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   let pointerTargetY = 0;
   let pointerX = 0;
   let pointerY = 0;
-  let hovered = null;
+  let pointerPresent = false;
+  let pointerClientX = 0;
+  let pointerClientY = 0;
+  let workTravel = 0;
   let animationFrame = 0;
   let lastTime = performance.now();
   let motionTime = 0;
@@ -362,7 +269,11 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   let motionRequested = Boolean(motionEnabled);
   let pointerListening = false;
   const pointerNdc = new THREE.Vector2();
+  // Project the desktop pointer onto the organism's local plane. No triangle
+  // raycasts (including on touch), and no per-event geometry allocations.
   const raycaster = new THREE.Raycaster();
+  const pointerPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  const worldHit = new THREE.Vector3();
   const mediaCleanup = [];
 
   const isReduced = () => reducedMotionQuery.matches;
@@ -400,12 +311,17 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     canvas.dataset.dpr = Number(renderer.getPixelRatio()).toFixed(2);
     canvas.dataset.frames = String(renderedFrames);
     canvas.dataset.quality = currentQuality(coarseQuery.matches || window.innerWidth < 720);
-    canvas.dataset.particles = String(fluidParticles.count);
-    canvas.dataset.fluidGrid = fluidParticles.gridSize;
+    canvas.dataset.particles = '0';
+    canvas.dataset.pointerStrength = vortex.pointerStrength.toFixed(4);
+    canvas.dataset.hoverStrength = vortex.hoverStrength.toFixed(3);
+    canvas.dataset.emberEnergy = vortex.energy.toFixed(3);
     canvas.dataset.vortexExpansion = vortex.expansion.toFixed(3);
     canvas.dataset.vortexStrands = String(vortex.strandCount);
     canvas.dataset.scatterCount = String(vortex.scatterCount);
-    canvas.dataset.sceneShape = 'fluid-vortex';
+    canvas.dataset.vortexCilia = String(vortex.ciliaCount);
+    canvas.dataset.vortexShape = vortex.shape.toFixed(3);
+    canvas.dataset.vortexDrawCalls = String(vortex.drawCalls);
+    canvas.dataset.sceneShape = 'ember-chrysalis';
   };
 
   const notifyReady = () => {
@@ -436,7 +352,6 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     const maxDpr = narrow || coarseQuery.matches ? 1.5 : 2;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(width, height, false);
-    fluidParticles.resize(width, height, renderer.getPixelRatio(), narrow || coarseQuery.matches);
     vortex.resize(width, height, renderer.getPixelRatio(), narrow || coarseQuery.matches);
     camera.aspect = width / height;
     camera.fov = narrow ? 47 : 42;
@@ -457,34 +372,25 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     // Keep a glimpse of the upright silhouette at the right edge on mobile,
     // using the camera's visible width rather than pushing it entirely offscreen.
     const viewWidth = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * state.z * camera.aspect;
+    const uncoil = THREE.MathUtils.smoothstep(state.progress, 0, 1);
+    const depart = THREE.MathUtils.smoothstep(state.progress, 2, 3);
+    const centerX = lerp(lerp(state.x, 0.3, uncoil), viewWidth * 0.38, depart);
     world.position.set(
-      mobileFrame ? viewWidth * 0.31 : state.x,
+      mobileFrame ? viewWidth * 0.31 : centerX,
       mobileFrame ? 0.45 + state.y * 0.5 : state.y,
       0,
     );
-    world.scale.setScalar(state.scale * (mobileFrame ? 0.52 : 0.86));
-    heroObject.rotation.set(
-      state.rx + pointerY * 0.025,
-      state.ry + pointerX * 0.08,
-      state.rz + pointerX * 0.012,
-    );
-    vortex.update(time * 0.001, state.expansion, fluidParticles.energy * motion);
-    stars.rotation.y += delta * 0.009 * motion;
-    stars.rotation.x = pointerY * 0.018;
-
-    for (let index = 0; index < markerEntries.length; index += 1) {
-      const entry = markerEntries[index];
-      const { angle, radius, height, speed } = entry.marker.userData;
-      const orbitAngle = angle + time * 0.001 * speed * motion + height * 0.45;
-      const orbitRadius = radius * (0.55 + state.expansion * 0.45);
-      entry.marker.position.set(
-        Math.cos(orbitAngle) * orbitRadius,
-        height + Math.sin(time * 0.001 * (0.7 + index * 0.04)) * 0.2 * motion,
-        Math.sin(orbitAngle) * orbitRadius * 0.7,
-      );
-      entry.marker.rotation.set(orbitAngle * 0.6, orbitAngle, orbitAngle * 0.3);
-      entry.glow.scale.setScalar(1 + Math.sin(time * 0.0014 + index) * 0.12 * motion);
-    }
+    world.scale.setScalar(state.scale * (mobileFrame ? 0.46 : 0.82));
+    // The coil rotates in the shared shader; technical lanes stay face-on.
+    heroObject.rotation.set(state.rx * (1 - uncoil), 0, state.rz * (1 - uncoil));
+    // Hold the ribbon state through all five projects, then resolve into the
+    // research lanes near that section. Existing anchors aren't moved.
+    const shape = state.progress < 1 ? state.progress
+      : state.progress < 2 ? 1 + THREE.MathUtils.smoothstep(state.progress, 1.86, 2)
+      : 2 + THREE.MathUtils.smoothstep(state.progress, 2.72, 3);
+    vortex.setProgress(shape, workTravel);
+    if (shape > 2.7) { vortex.setPointer(0, 0, false); vortex.setHover(-1); }
+    vortex.update(time * 0.001, state.expansion, scrollEnergy * motion);
 
     // The target includes all offsets before damping; adding them after damp
     // would feed an offset back into the next frame and cause camera drift.
@@ -518,7 +424,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     const delta = Math.min(0.05, Math.max(0, (time - lastTime) / 1000));
     lastTime = time;
     motionTime += delta * 1000;
-    fluidParticles.update(delta);
+    scrollEnergy *= Math.exp(-3.4 * delta);
     state.x = damp(state.x, targetState.x, 4.6, delta);
     state.y = damp(state.y, targetState.y, 4.6, delta);
     state.z = damp(state.z, targetState.z, 4.6, delta);
@@ -527,6 +433,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     state.ry = damp(state.ry, targetState.ry, 4.6, delta);
     state.rz = damp(state.rz, targetState.rz, 4.6, delta);
     state.expansion = damp(state.expansion, targetState.expansion, 5.2, delta);
+    state.progress = damp(state.progress, targetState.progress, 5.2, delta);
     pointerX = damp(pointerX, pointerTargetX, 5.5, delta);
     pointerY = damp(pointerY, pointerTargetY, 5.5, delta);
     applyVisuals(motionTime, 1, delta);
@@ -542,47 +449,46 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     pointerY = 0;
     pointerTargetX = 0;
     pointerTargetY = 0;
-    fluidParticles.resetInteraction();
+    resetInteraction();
     applyVisuals(0, 0, 0);
     render();
     updateStateAttribute();
   };
 
-  const clearHover = () => {
-    if (!hovered) return;
-    hovered.material.emissiveIntensity = 1.15;
-    hovered.marker.scale.setScalar(1);
-    hovered.target?.classList.remove('is-3d-hovered');
-    hovered = null;
+  const clearHover = () => vortex.setHover(-1);
+  const updateProjectHover = (element) => {
+    const project = element instanceof Element ? element.closest('[data-project], .selected-work-card') : null;
+    if (!project) { clearHover(); return; }
+    // Pulse the nearest visible part, not a fixed index unrelated to the card.
+    const rect = project.getBoundingClientRect();
+    const screenY = clamp((rect.top + rect.height * 0.5) / window.innerHeight, 0.05, 0.95);
+    vortex.setHover(screenY);
   };
 
   const updatePointer = (event) => {
-    if (!pointerListening || event.pointerType === 'touch' || !canAnimate()) return;
+    if (!pointerListening || event.pointerType !== 'mouse' || !canAnimate()) return;
     pointerTargetX = clamp((event.clientX / Math.max(1, window.innerWidth) - 0.5) * 2, -1, 1);
     pointerTargetY = clamp((event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2, -1, 1);
-    fluidParticles.pointerMove(
-      (pointerTargetX + 1) * 0.5,
-      (1 - pointerTargetY) * 0.5,
-      performance.now(),
-    );
+    pointerPresent = true;
+    pointerClientX = event.clientX;
+    pointerClientY = event.clientY;
     pointerNdc.set(pointerTargetX, -pointerTargetY);
+    camera.updateMatrixWorld();
+    vortex.group.updateWorldMatrix(true, false);
     raycaster.setFromCamera(pointerNdc, camera);
-    const hit = raycaster.intersectObjects(markerObjects, false)[0];
-    const next = hit?.object.userData.entry || null;
-    if (next === hovered) return;
-    clearHover();
-    hovered = next;
-    if (!hovered) return;
-    hovered.material.emissiveIntensity = 2.3;
-    hovered.marker.scale.setScalar(1.45);
-    hovered.target?.classList.add('is-3d-hovered');
+    if (raycaster.ray.intersectPlane(pointerPlane, worldHit)) {
+      vortex.group.worldToLocal(worldHit);
+      vortex.setPointer(worldHit.x, worldHit.y, true);
+    }
+    updateProjectHover(event.target);
   };
 
   const onPointerLeave = () => {
     clearHover();
     pointerTargetX = 0;
     pointerTargetY = 0;
-    fluidParticles.pointerLeave();
+    pointerPresent = false;
+    vortex.setPointer(0, 0, false);
   };
 
   const syncPointerListener = () => {
@@ -597,14 +503,14 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     pointerListening = shouldListen;
     if (shouldListen) {
       window.addEventListener('pointermove', updatePointer, { passive: true });
-      document.addEventListener('pointerleave', onPointerLeave, { passive: true });
+      document.documentElement.addEventListener('pointerleave', onPointerLeave, { passive: true });
       window.addEventListener('blur', onPointerLeave);
     } else {
       window.removeEventListener('pointermove', updatePointer);
-      document.removeEventListener('pointerleave', onPointerLeave);
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave);
       window.removeEventListener('blur', onPointerLeave);
       onPointerLeave();
-      fluidParticles.resetInteraction();
+      resetInteraction();
     }
   };
 
@@ -613,7 +519,15 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     lastScrollY = window.scrollY;
     document.body.classList.toggle('scene-past-hero', window.scrollY > window.innerHeight * 0.72);
     if (!isReduced() && motionRequested) updateTargetFromScroll();
-    if (canAnimate()) fluidParticles.scroll(scrollDelta, window.innerHeight);
+    if (canAnimate()) {
+      const velocity = clamp(scrollDelta / Math.max(1, window.innerHeight) * 8, -1, 1);
+      scrollEnergy = Math.min(1, scrollEnergy + Math.abs(velocity));
+      vortex.setScrollVelocity(velocity);
+      const workIndex = sections.findIndex((section) => section.id === 'work');
+      const researchIndex = sections.findIndex((section) => section.id === 'research');
+      workTravel = clamp((window.scrollY - anchors[workIndex]) / Math.max(1, anchors[researchIndex] - anchors[workIndex]), 0, 1);
+      if (pointerPresent) updateProjectHover(document.elementFromPoint(pointerClientX, pointerClientY));
+    }
   };
 
   const onNavigationStateChange = () => {
@@ -628,7 +542,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     if (!active) {
       cancelFrame();
       onPointerLeave();
-      fluidParticles.resetInteraction();
+      resetInteraction();
       updateStateAttribute();
       return;
     }
@@ -644,7 +558,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
     contextLost = true;
     cancelFrame();
     onPointerLeave();
-    fluidParticles.resetInteraction();
+    resetInteraction();
     if (!failureNotified) {
       failureNotified = true;
       markUnavailable(canvas);
@@ -673,7 +587,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       active = false;
       cancelFrame();
       onPointerLeave();
-      fluidParticles.resetInteraction();
+      resetInteraction();
       updateStateAttribute();
       return;
     }
@@ -712,28 +626,13 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
   const onThemeChange = () => {
     if (disposed) return;
     const next = getThemeColors();
-    fluidParticles.setTheme(next);
     vortex.setTheme(next);
     renderer.setClearColor(next.bg, 0);
     scene.fog.color.set(next.bg);
-    markerEntries.forEach(({ material, glow }) => {
-      material.color.set(next.accent);
-      material.emissive.set(next.accent);
-      glow.material.color.set(next.accent);
-    });
     hemisphereLight.color.set(next.accent);
     hemisphereLight.groundColor.set(next.bg);
     cyanLight.color.set(next.accent);
     indigoLight.color.set(next.highlight);
-    const colors = stars.geometry.getAttribute('color');
-    const accent = new THREE.Color(next.accent);
-    const highlight = new THREE.Color(next.highlight);
-    const color = new THREE.Color();
-    for (let index = 0; index < colors.count; index += 1) {
-      color.copy(highlight).lerp(accent, (index % 10) / 12);
-      colors.setXYZ(index, color.r, color.g, color.b);
-    }
-    colors.needsUpdate = true;
     canvas.dataset.theme = document.documentElement.dataset.theme || 'teal';
     render();
   };
@@ -744,7 +643,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       if (!canvasVisible) {
         cancelFrame();
         onPointerLeave();
-        fluidParticles.resetInteraction();
+        resetInteraction();
       } else if (canAnimate()) scheduleFrame();
       else render();
       updateStateAttribute();
@@ -765,7 +664,7 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       syncPointerListener();
       if (!motionRequested) {
         cancelFrame();
-        fluidParticles.resetInteraction();
+        resetInteraction();
         updateStateAttribute();
         return;
       }
@@ -780,9 +679,9 @@ export function initScene({ onReady, onFailure, motionEnabled = true } = {}) {
       if (disposed) return;
       cancelFrame();
       window.removeEventListener('pointermove', updatePointer);
-      document.removeEventListener('pointerleave', onPointerLeave);
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave);
       window.removeEventListener('blur', onPointerLeave);
-      fluidParticles.resetInteraction();
+      resetInteraction();
       pointerListening = false;
       disposed = true;
        window.removeEventListener('resize', scheduleResize);

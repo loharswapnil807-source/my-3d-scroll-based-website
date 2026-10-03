@@ -163,3 +163,40 @@ Known limitation: these are Windows Chrome headless/CDP checks, not real iOS Saf
 - Vite reports a non-fatal warning for the lazy scene chunk (~515 kB minified / 132 kB gzip, including Three.js). The main UI remains separately loaded.
 - Existing content limitations remain: Terminal Game has a labeled diagram, some C/C++ repositories have no verified public source link, and contact submission opens an email draft rather than sending through a backend.
 - After pushing, verify the GitHub Pages deployment and inspect the new vortex/paired galleries on the owner's actual phone and desktop.
+
+## Current update — Ember Chrysalis (2026-10-03)
+
+This update supersedes the previous vortex/fragment implementation above. Historical check results are retained as history, not claims about the new module.
+
+### Scope and implementation
+
+- Replaced `src/fluid-vortex.js` with **one continuous copper ribbon**. Its instanced patches represent consecutive intervals of one global curve, not independently seeded strands or separate sphere/ribbon meshes. The same strip geometry survives all scroll states and viewport sizes.
+- Hero: breathing, slowly rotating spherical coil (local radius ~1.8), with a small icosahedron heart. Work: a vertical S-ribbon whose phase follows the five project chapters. Research: five straight lanes connected by stepped returns. Contact: a tapered, lifted tail; the membrane's own patches detach/fade into sparse ember flecks.
+- Cilia: 220 desktop / 110 mobile hairlines in one `LineSegments` call. Membrane and cilia share the exact GLSL centerline, edge, pointer deformation, and uniforms. Research hairlines become straight perpendicular ticks; contact hairlines fade away.
+- Draw budget verified in the real renderer: **3 hero calls** (membrane, cilia, heart), **2 after uncoiling**. Removed the former scene stars, orbit markers, and WebGL cursor particle cloud. The existing DOM cursor lens/trail/glow is unchanged. Old fluid helper modules are retained for compatibility/history but no longer loaded by the scene.
+- Pointer events are projected to local object coordinates on desktop only. A local dent/ripple uses a critically damped spring, settling in approximately 0.8 seconds of animation time. Project-card hover pulses the nearest visible ribbon region. Signed scroll impulses add twist and turbulence; paused/hidden/reduced-motion paths reset forces.
+- Kept `createFluidVortex()` and legacy `update()` compatibility, plus `setTheme()`, `resize()`, `setProgress()`, pointer/hover/velocity inputs and disposal. Module API is documented in `README.md`.
+- `src/scene.js` passes shape progress through the **existing section IDs, anchor measurements, anchor interpolation, and camera keyframes**. No HTML anchors or scroll-trigger library were added. Damped framing centers the Work ribbon and moves the Contact tail away from the form.
+- `style.css` changes are **exclusively warm-theme scoped**: cream paper, copper ink, quieter surfaces, and an unboxed, less padded Contact panel. Teal/violet CSS, typography, navigation, image animations, cursor movement, link glow, and theme-switch/persistence code are unchanged.
+- Retained Three.js 0.176.0 import map, one fixed pointer-transparent canvas, DPR caps, no textures/HDR/postprocessing, normal alpha blending, one host RAF, and static fallback/lifecycle safeguards.
+
+### Verification actually run
+
+- `npm test` — **6 passing tests**: retained fluid helper boundaries; connected strip and reversible state; shared cilia inputs; spring settling, hover and force reset; touch/low-power pointer suppression and intact topology; DPR/LOD; copper palette and idempotent disposal.
+- `npm run build` — **PASS** with both HTML entry points. Lazy scene chunk ~509 kB minified / 130 kB gzip; Vite's existing non-fatal size warning remains.
+- `node --check` for every `src/*.js`, `tests/*.js`, and `tests/*.mjs`; `git diff --check` — **PASS**.
+- `node tests/browser-smoke.mjs`, with existing external Playwright/Chromium 153 and Linux browser libraries supplied via environment variables — **22 passing groups**, against the production build served by `python3 -m http.server 4173 --bind 127.0.0.1 --directory dist`.
+  - Real GPU-program compilation/rendering with no shader/runtime errors; actual 3/2 draw counts; all four states/reversal and one Work ribbon through all five project titles; local pointer activity/settling and card hover activation/clear.
+  - Existing theme cycle/persistence, manual pause, runtime reduced motion, mobile detail, simulated BFCache, and actual `WEBGL_lose_context` fallback.
+  - Five-width layout matrix, six image previews/focus restoration, corner arrivals, existing cursor/hover effects, mobile menu/keyboard, touch, blocked storage, rapid resize/scroll, local links, and no-JavaScript fallback.
+  - Warm Contact has no enclosing box, reduced padding, and no overflow at 320/375/768/1440px.
+- `node /tmp/portfolio-accessibility.mjs` — axe-core WCAG 2 A/AA + 2.1 AA: **zero reported violations** in teal, violet, warm desktop, and warm at 320px (WebGL disabled/reduced motion for this accessibility scan).
+- AST comparison using PostCSS: after stripping warm-scoped rules, all remaining CSS exactly equals the previous commit. Byte comparisons confirmed `index.html`, `main.js`, and `src/interactions.js` unchanged. Comparison also confirmed the original section-anchor interpolation is unchanged.
+- Manually inspected screenshots: hero coil in all themes, Work weave, research circuit, contact dissolution, mobile reduced motion, and warm Contact at 320px/desktop. Evidence lives in `/tmp/ember-qa/`, not in the commit.
+- Early shader compilation caught a reserved GLSL identifier; renamed it and reran actual rendering successfully. A browser assertion that read styles before theme application settled was replaced by waiting for the intended computed style; the full suite then passed.
+
+### Remaining limits
+
+- This is an original procedural visual design, not a scientific fluid solver or a claim of globally unique artwork. It morphs vertex positions on a fixed topology, intentionally avoiding separate state meshes.
+- No real-device Safari/Firefox/iOS/Android, manual screen-reader, or hardware FPS certification. SwiftShader is used for rendering checks; spring timing under heavily throttled software rendering can be slower in wall-clock time because the host bounds frame deltas.
+- Next check after deployment: inspect the new coil/Work ribbon and warm Contact on the owner's actual phone and desktop. Existing source-link and mailto-contact limitations remain unchanged.

@@ -50,17 +50,47 @@ try {
     const { context, page, errors } = await openContext();
     await page.waitForFunction(() => document.querySelector('#scene').dataset.state === 'ready', null, { timeout: 30000 });
     await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.frames) > 2, null, { timeout: 30000 });
-    assert.equal(await page.locator('#scene').getAttribute('data-scene-shape'), 'fluid-vortex');
-    assert.equal(await page.locator('#scene').getAttribute('data-scatter-count'), '38');
-    await page.screenshot({ path: join(output, 'desktop-hero.png') });
-    passed('live WebGL vortex and 38 solid fragments render without shader errors');
+    assert.equal(await page.locator('#scene').getAttribute('data-scene-shape'), 'ember-chrysalis');
+    assert.equal(await page.locator('#scene').getAttribute('data-scatter-count'), '0');
+    assert.equal(await page.locator('#scene').getAttribute('data-vortex-strands'), '1');
+    assert.equal(await page.locator('#scene').getAttribute('data-vortex-cilia'), '220');
+    assert.equal(await page.locator('#scene').getAttribute('data-vortex-draw-calls'), '3');
+    await page.screenshot({ path: join(output, 'desktop-ember-hero.png') });
+    assert.equal(await page.locator('#scene').getAttribute('data-draw-calls'), '3');
+    assert.deepEqual(errors, []);
+    passed('live Ember Chrysalis renders as one membrane, one cilia system, and one heart without shader errors');
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexShape) < 0.06, null, { timeout: 30000 });
     await scrollTo(page, '#about', 0);
-    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexExpansion) < 0.06, null, { timeout: 30000 });
+    await page.waitForFunction(() => { const shape = Number(document.querySelector('#scene').dataset.vortexShape); return shape > 0.3 && shape < 0.7; }, null, { timeout: 30000 });
     await scrollTo(page, '#work', 0);
-    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexExpansion) > 0.88, null, { timeout: 30000 });
-    await scrollTo(page, '#about', 0);
-    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexExpansion) < 0.06, null, { timeout: 30000 });
-    passed('scroll expands, contracts, and reverses the vortex');
+    await page.waitForFunction(() => { const shape = Number(document.querySelector('#scene').dataset.vortexShape); return shape > 0.9 && shape < 1.1; }, null, { timeout: 30000 });
+    for (const project of ['sweets', 'terminal', 'bunk', 'environment', 'stickman']) {
+      await scrollTo(page, `#project-${project}-title`);
+      await page.waitForFunction(() => { const shape = Number(document.querySelector('#scene').dataset.vortexShape); return shape >= 0.98 && shape < 1.3; }, null, { timeout: 30000 });
+    }
+    assert.equal(await page.locator('#scene').getAttribute('data-draw-calls'), '2');
+    await page.locator('.project--stickman .project-copy').hover();
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.hoverStrength) > 0.5, null, { timeout: 15000 });
+    await page.mouse.move(10, 100);
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.hoverStrength) < 0.01, null, { timeout: 15000 });
+    passed('one ribbon persists through all five projects; hovering the nearest card segment pulses and settles');
+    await scrollTo(page, '#research', 0);
+    await page.waitForFunction(() => { const shape = Number(document.querySelector('#scene').dataset.vortexShape); return shape > 1.9 && shape < 2.1; }, null, { timeout: 30000 });
+    await page.screenshot({ path: join(output, 'research-lanes.png') });
+    await scrollTo(page, '#contact', 0);
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexShape) > 2.9, null, { timeout: 30000 });
+    await scrollTo(page, '#research', 0);
+    await page.waitForFunction(() => { const shape = Number(document.querySelector('#scene').dataset.vortexShape); return shape > 1.9 && shape < 2.1; }, null, { timeout: 30000 });
+    passed('scroll morphs hero orb → work weave → research lanes → thin contact tail and reverses');
+    await scrollTo(page, '#hero', 64);
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.vortexShape) < 0.01, null, { timeout: 30000 });
+    for (let i = 0; i < 45; i += 1) {
+      await page.mouse.move(1000 + Math.sin(i * 0.5) * 80, 480 + Math.cos(i * 0.5) * 60);
+      await wait(page, 35);
+    }
+    assert.ok(Number(await page.locator('#scene').getAttribute('data-pointer-strength')) > 0.02);
+    await page.waitForFunction(() => Number(document.querySelector('#scene').dataset.pointerStrength) < 0.005, null, { timeout: 20000 });
+    passed('desktop pointer reaches local membrane deformation and settles after movement');
     await page.locator('#motion-toggle').click();
     const paused = await page.locator('#scene').getAttribute('data-frames');
     await wait(page, 1200);
@@ -71,7 +101,7 @@ try {
       await page.locator('#theme-toggle').click();
       assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
       assert.equal(await page.locator('#scene').getAttribute('data-theme'), theme);
-      const palette = { teal: 'rgb(45, 212, 191)', violet: 'rgb(167, 139, 250)', warm: 'rgb(228, 87, 46)' };
+      const palette = { teal: 'rgb(45, 212, 191)', violet: 'rgb(167, 139, 250)', warm: 'rgb(157, 67, 43)' };
       await page.waitForFunction((color) => getComputedStyle(document.querySelector('.hero h1 em')).color === color, palette[theme]);
       await wait(page, 300);
       await page.screenshot({ path: join(output, `theme-${theme}.png`) });
@@ -87,9 +117,11 @@ try {
     assert.equal(await page.locator('#motion-toggle').textContent(), 'Motion disabled');
     assert.equal(await page.locator('.cursor-glow').evaluate((el) => getComputedStyle(el).display), 'none');
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.waitForFunction(() => document.querySelector('#scene').dataset.vortexStrands === '144', null, { timeout: 10000 });
-    assert.equal(await page.locator('#scene').getAttribute('data-vortex-strands'), '144');
-    assert.equal(await page.locator('#scene').getAttribute('data-scatter-count'), '16');
+    await page.waitForFunction(() => document.querySelector('#scene').dataset.vortexCilia === '110', null, { timeout: 10000 });
+    assert.equal(await page.locator('#scene').getAttribute('data-vortex-strands'), '1');
+    assert.equal(await page.locator('#scene').getAttribute('data-vortex-cilia'), '110');
+    assert.equal(await page.locator('#scene').getAttribute('data-scatter-count'), '0');
+    assert.equal(await page.locator('#scene').getAttribute('data-pointer-strength'), '0.0000');
     await page.screenshot({ path: join(output, 'mobile-reduced.png') });
     passed('runtime reduced motion stops effects; paused resize reframes and selects mobile detail');
     await page.setViewportSize({ width: 1024, height: 768 });
@@ -207,6 +239,22 @@ try {
     // Renderer initialization error is expected in this intentionally no-WebGL context.
     assert.deepEqual(errors.filter((error) => !error.includes('Error creating WebGL context')), []);
     passed('20 rapid resizes/scroll reversals remain usable; all local images, documents and resume links resolve');
+    await page.locator('#theme-toggle').click(); // violet
+    await page.locator('#theme-toggle').click(); // warm
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'warm');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.contact-scene')).backgroundColor === 'rgba(0, 0, 0, 0)');
+    for (const width of [320, 375, 768, 1440]) {
+      await page.setViewportSize({ width, height: width < 768 ? 812 : 1000 });
+      await scrollTo(page, '#contact');
+      const metrics = await layout(page);
+      assert.ok(metrics.content <= width, `warm contact overflow at ${width}px`);
+      const panel = await page.locator('.contact-scene').evaluate((el) => ({ border: getComputedStyle(el).borderTopWidth, background: getComputedStyle(el).backgroundColor, padding: getComputedStyle(el).paddingTop }));
+      assert.equal(panel.border, '0px');
+      assert.equal(panel.background, 'rgba(0, 0, 0, 0)');
+      assert.ok(parseFloat(panel.padding) <= 32);
+      await page.screenshot({ path: join(output, `warm-contact-${width}.png`) });
+    }
+    passed('warm contact is unboxed, slimmer, and overflow-free at 320/375/768/1440px');
     await context.close();
   }
   {

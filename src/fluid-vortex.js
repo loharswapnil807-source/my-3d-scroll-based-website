@@ -1,299 +1,439 @@
 import * as THREE from 'three';
 
-const TAU = Math.PI * 2;
-const MAX_STRANDS = 320;
-const MOBILE_STRANDS = 144;
-const SEGMENTS = 112;
-const MAX_SCATTER = 30;
-const MOBILE_SCATTER = 12;
+const PATCHES = 480;
+const PATCH_SEGMENTS = 4;
+const CILIA = 220;
+const CILIA_SEGMENTS = 6;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 
-// All streamlines are evaluated on the GPU. The CPU only moves the small,
-// bounded collection of solid fragments; there are no textures or readbacks.
-const vertexShader = `
-  attribute vec4 aSeed;
-  attribute float aKind;
+/** Critically damped, exact step; 98% of an impulse settles in about 0.8s. */
+function settle(position, velocity, target, delta, frequency = 7.3) {
+  const offset = position - target;
+  const impulse = velocity + frequency * offset;
+  const decay = Math.exp(-frequency * delta);
+  return [(offset + impulse * delta) * decay + target, (velocity - frequency * impulse * delta) * decay];
+}
+
+// Both draw calls include this exact path. Each membrane instance is an adjacent
+// interval of ONE global curve, not another ribbon. Cilia sample its actual edge.
+const organismGLSL = `
+  uniform float uShape;
   uniform float uTime;
-  uniform float uExpansion;
   uniform float uEnergy;
-  uniform float uDpr;
-  uniform float uGlow;
-  uniform vec2 uResolution;
-  varying float vAcross;
-  varying float vAlong;
-  varying float vHeight;
-  varying float vLight;
-  varying float vSeed;
-  varying float vKind;
+  uniform float uTwist;
+  uniform float uWorkTravel;
+  uniform float uHover;
+  uniform float uHoverStrength;
+  uniform vec4 uPointer;
+  uniform vec2 uPointerImpulse;
+  const float PI = 3.14159265359;
   const float TAU = 6.28318530718;
 
-  vec3 streamline(float t) {
-    float open = smoothstep(0.0, 1.0, uExpansion);
-    float phase = aSeed.x * TAU;
-    float drift = uTime * (0.44 + aSeed.y * 0.2);
-    float y;
-    float radius;
-    float angle;
+  float ease(float value) { return smoothstep(0.0, 1.0, value); }
+  float hash(float value) { return fract(sin(value * 127.1 + 311.7) * 43758.5453); }
+  float researchAmount() { return 1.0 - ease(abs(uShape - 2.0)); }
+  float goodbye() { return ease((uShape - 2.0) / 1.0); }
 
-    if (aKind < 0.5) {
-      // Nested helical sheets form the body and gather at both luminous poles.
-      y = (t * 2.0 - 1.0) * (3.95 + aSeed.z * 0.25);
-      float bell = pow(max(0.0, sin(t * 3.14159265359)), 1.7);
-      float layer = 0.48 + aSeed.y * 0.52;
-      radius = 0.006 + bell * (0.045 + open * 1.96 * layer);
-      float turns = 5.2 + aSeed.z * 1.3 + (1.0 - open) * 3.8;
-      angle = phase + t * TAU * turns - drift;
-      radius *= 1.0 + open * 0.055 * sin(t * 24.0 + phase - uTime * 0.7);
-    } else {
-      // Shorter swept trails curl away from the sheet. Their staggered ends
-      // produce the feathered toroidal silhouette rather than a solid cone.
-      float latitude = (aSeed.z * 2.0 - 1.0) * 0.82;
-      float sweep = t - 0.5;
-      float height = latitude + sweep * (0.12 + aSeed.w * 0.22);
-      y = height * 3.65;
-      float bell = pow(max(0.0, 1.0 - height * height), 1.65);
-      float unfurl = pow(t, 1.5);
-      float layer = 0.79 + aSeed.y * 0.21;
-      radius = 0.012 + bell * 0.043;
-      radius += open * bell * (1.9 * layer + unfurl * (0.55 + aSeed.w * 0.9));
-      angle = phase + latitude * 9.0 - drift;
-      angle += t * (2.2 + aSeed.y * 1.8 + (1.0 - open) * 5.0);
-      y += open * bell * (0.14 * sin(t * 4.0 + phase) - unfurl * 0.26);
-      radius += open * bell * 0.045 * sin(t * 12.0 + phase + uTime * 0.8);
-    }
-
-    // A subtle living axis: never tilt the spindle away from its vertical form.
-    float bend = open * 0.035 * sin(y * 1.4 + uTime * 0.55);
-    radius *= 1.0 + uEnergy * open * 0.035;
-    return vec3(cos(angle) * radius + bend, y, sin(angle) * radius);
+  vec3 orb(float t) {
+    float latitude = (t - 0.5) * PI;
+    float angle = t * TAU * 10.0 + uTime * 0.13;
+    float radius = 1.8 * (1.0 + 0.018 * sin(uTime * 1.65));
+    radius += 0.025 * sin(angle * 3.0 - uTime * 0.7) * cos(latitude);
+    return radius * vec3(cos(latitude) * cos(angle), sin(latitude), cos(latitude) * sin(angle));
   }
 
-  void main() {
-    float t = position.x;
-    vec3 p = streamline(t);
-    // Screen-facing ribbon widths remain legible without platform line-width
-    // extensions. The finite difference only evaluates two analytical points.
-    float step = t > 0.998 ? -0.002 : 0.002;
-    vec3 next = streamline(t + step);
-    vec4 viewPosition = modelViewMatrix * vec4(p, 1.0);
-    vec4 clip = projectionMatrix * viewPosition;
-    vec4 tangent = projectionMatrix * modelViewMatrix * vec4((next - p) * sign(step), 0.0);
-    vec2 direction = tangent.xy * uResolution;
-    direction /= max(length(direction), 0.00001);
-    vec2 normal = vec2(-direction.y, direction.x);
-    float taper = pow(max(0.0, sin(t * 3.14159265359)), 0.28);
-    float width = mix(1.25, 1.85, aSeed.w) * mix(0.38, 1.0, taper);
-    width *= mix(1.0, 0.48 + 0.52 * (1.0 - t), aKind);
-    width *= mix(1.0, 4.8, uGlow) * uDpr;
-    clip.xy += normal * position.y * width / uResolution * clip.w;
-    gl_Position = clip;
-    vAcross = position.y;
-    vAlong = t;
-    vHeight = p.y / 4.2;
-    vLight = 0.48 + 0.52 * smoothstep(-1.8, 1.8, p.z);
-    vSeed = aSeed.y;
-    vKind = aKind;
+  vec3 weave(float t) {
+    // One S down the viewport. Its phase tracks the five project chapters;
+    // the brightest ribbon stays in the gutter between image and copy.
+    float angle = (t * 1.25 + uWorkTravel * 0.9) * TAU;
+    return vec3(0.76 * sin(angle), (0.5 - t) * 9.4, 0.34 * cos(angle));
+  }
+
+  vec3 lanePoint(float index) {
+    float row = floor(index * 0.5);
+    float edge = mod(index, 2.0);
+    float side = mod(row, 2.0) < 0.5 ? edge : 1.0 - edge;
+    return vec3(mix(-2.6, 2.6, side), 1.7 - row * 0.85, 0.0);
+  }
+
+  vec3 lanes(float t) {
+    // A serpentine circuit: five horizontal lanes joined by four short
+    // vertical returns. These are still successive intervals of the ribbon.
+    float along = t * 9.0;
+    float segment = min(8.0, floor(along));
+    return mix(lanePoint(segment), lanePoint(segment + 1.0), along - segment);
+  }
+
+  vec3 farewell(float t) {
+    float taper = 1.0 - t;
+    return vec3(0.7 * sin(t * TAU * 0.8 + 0.3) * taper,
+      -2.8 + t * 6.5 + 0.035 * sin(uTime * 0.4),
+      0.22 * cos(t * TAU) * taper);
+  }
+
+  vec3 centerline(float t) {
+    vec3 p;
+    if (uShape < 1.0) p = mix(orb(t), weave(t), ease(uShape));
+    else if (uShape < 2.0) p = mix(weave(t), lanes(t), ease(uShape - 1.0));
+    else p = mix(lanes(t), farewell(t), ease(uShape - 2.0));
+    float fluidity = 1.0 - researchAmount();
+    p.x += sin(t * TAU * 5.0 - uTime * 1.4) * uEnergy * 0.08 * fluidity;
+    p.z += cos(t * TAU * 3.0 + uTime) * uEnergy * 0.08 * fluidity;
+    return p;
+  }
+
+  vec3 deformed(vec3 p) {
+    vec2 delta = p.xy - uPointer.xy;
+    float distance = length(delta);
+    float local = exp(-dot(delta, delta) / 0.56);
+    float dent = uPointer.z * local;
+    // Actual local surface displacement, not camera tilt or cursor particles.
+    p.z -= dent * 0.3;
+    p.xy -= delta * dent * 0.08;
+    p.xy += uPointerImpulse * local * 0.12;
+    p.z += sin(distance * 12.0 - uTime * 7.0) * exp(-distance * 2.5) * uPointer.w * 0.13;
+    return p;
+  }
+
+  vec3 sideAt(float t) {
+    vec3 p = centerline(t);
+    vec3 tangent = normalize(centerline(min(1.0, t + 0.0003)) - centerline(max(0.0, t - 0.0003)) + vec3(0.000001));
+    vec3 radial = normalize(orb(t) + vec3(0.000001));
+    vec3 coilSide = normalize(cross(tangent, radial) + vec3(0.000001));
+    vec3 flatSide = normalize(cross(tangent, vec3(0.0, 0.0, 1.0)) + vec3(0.000001));
+    vec3 side = normalize(mix(coilSide, flatSide, ease(uShape)) + vec3(0.000001));
+    float twist = (sin(t * TAU * 2.0 + uTime * 0.32) * 0.45 + uTwist * 0.8) * (1.0 - researchAmount());
+    return side * cos(twist) + cross(tangent, side) * sin(twist);
+  }
+
+  float halfWidth(float t) {
+    float coil = 0.095 * (0.25 + 0.75 * cos((t - 0.5) * PI));
+    float width = mix(coil, 0.075, ease(uShape));
+    width = mix(width, 0.018, ease(uShape - 1.0));
+    width = mix(width, 0.045 * pow(max(0.0, 1.0 - t), 1.8) + 0.001, goodbye());
+    return width;
+  }
+
+  vec3 edgeAt(float t, float across) {
+    return deformed(centerline(t) + sideAt(t) * halfWidth(t) * across);
   }
 `;
 
-const fragmentShader = `
-  uniform vec3 uAccent;
-  uniform vec3 uHighlight;
-  uniform vec3 uTip;
-  uniform float uExpansion;
-  uniform float uGlow;
-  uniform float uOpacity;
-  uniform float uTime;
+const membraneVertex = `${organismGLSL}
+  attribute float aPatch;
+  uniform float uPatchCount;
+  uniform float uDpr;
+  uniform vec2 uResolution;
   varying float vAcross;
   varying float vAlong;
-  varying float vHeight;
-  varying float vLight;
-  varying float vSeed;
-  varying float vKind;
+  varying float vShard;
+  varying float vDissolve;
+  varying vec3 vNormal;
+  varying vec3 vView;
 
   void main() {
-    float edge = 1.0 - smoothstep(0.35, 1.0, abs(vAcross));
-    float ends = smoothstep(0.0, 0.025, vAlong) * (1.0 - smoothstep(0.88, 1.0, vAlong));
-    float feather = mix(1.0, smoothstep(0.015, 0.28, uExpansion), vKind);
-    float pole = smoothstep(0.32, 0.91, abs(vHeight));
-    float pulse = 0.86 + 0.14 * sin(vAlong * 35.0 - uTime * 2.0 + vSeed * 12.0);
-    vec3 color = mix(uAccent, uHighlight, vSeed * 0.3 + pole * 0.4);
-    color = mix(color, uTip, pole * pole * 0.94);
-    // The contracted filament brightens, while light themes retain colored ink.
-    color = mix(color, uTip, (1.0 - smoothstep(0.0, 0.3, uExpansion)) * 0.65);
-    float alpha = edge * ends * feather * vLight * pulse * uOpacity;
-    alpha *= mix(0.83, 0.075, uGlow);
+    float t = (aPatch + position.x) / uPatchCount;
+    float centerT = (aPatch + 0.5) / uPatchCount;
+    float across = position.y;
+    vec3 p = edgeAt(t, across);
+    vec3 tangent = normalize(edgeAt(min(1.0, t + 0.0003), across) - edgeAt(max(0.0, t - 0.0003), across) + vec3(0.000001));
+    vec3 side = sideAt(t);
+    vec3 normal = normalize(cross(tangent, side));
+    // At contact the SAME patches progressively detach into small ember flecks.
+    // No new particle object, random geometry, or state-dependent mesh swapping.
+    float detach = goodbye() * ease((centerT - 0.17) / 0.72);
+    float drift = uTime * 0.23 + aPatch * 2.39996;
+    float random = hash(aPatch);
+    vec3 emberCenter = edgeAt(centerT, 0.0);
+    emberCenter += vec3(sin(drift) * (0.25 + random * 0.75),
+      0.4 + random * 1.1 + sin(drift * 0.45) * 0.15,
+      cos(drift) * 0.3) * detach;
+    vec3 ember = emberCenter + vec3(across * 0.007, (position.x - 0.5) * 0.04, 0.0);
+    p = mix(p, ember, detach);
+    vec4 view = modelViewMatrix * vec4(p, 1.0);
+    gl_Position = projectionMatrix * view;
+    vNormal = normalize(normalMatrix * normal);
+    vView = -view.xyz;
+    vAlong = t;
+    vAcross = across;
+    vShard = random;
+    vDissolve = detach;
+  }
+`;
+
+const membraneFragment = `
+  uniform vec3 uCopper;
+  uniform vec3 uCream;
+  uniform vec3 uEmber;
+  uniform vec3 uAccent;
+  uniform float uOpacity;
+  uniform float uShape;
+  uniform float uTime;
+  uniform float uEnergy;
+  uniform float uHover;
+  uniform float uHoverStrength;
+  varying float vAcross;
+  varying float vAlong;
+  varying float vShard;
+  varying float vDissolve;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    vec3 normal = normalize(vNormal);
+    if (!gl_FrontFacing) normal = -normal;
+    vec3 view = normalize(vView);
+    vec3 light = normalize(vec3(-0.5, 0.9, 1.6));
+    float diffuse = 0.4 + 0.6 * abs(dot(normal, light));
+    float specular = pow(max(0.0, dot(normal, normalize(light + view))), 28.0);
+    float rim = pow(1.0 - abs(dot(normal, view)), 2.5);
+    float border = smoothstep(0.72, 0.99, abs(vAcross));
+    float technical = 1.0 - smoothstep(0.0, 1.0, abs(uShape - 2.0));
+    float pulse = uHoverStrength * exp(-pow((vAlong - uHover) * 11.0, 2.0));
+    vec3 color = uCopper * diffuse;
+    color = mix(color, uCream, clamp((specular * 0.65 + rim * 0.22 + border * 0.28) * (1.0 - technical * 0.7), 0.0, 0.85));
+    color = mix(color, uAccent, technical * 0.18);
+    color = mix(color, uEmber, pulse * 0.65 + uEnergy * 0.1 + vDissolve * 0.3);
+    float alpha = uOpacity * (0.86 + border * 0.14);
+    alpha *= mix(1.0, (0.35 + vShard * 0.4) * (0.85 + 0.15 * sin(uTime + vShard * 20.0)), vDissolve);
+    // Sparse floating remnants, rather than an opaque particle cloud.
+    if (vDissolve > 0.15 && vShard < vDissolve * 0.82) discard;
     gl_FragColor = vec4(color, alpha);
     #include <colorspace_fragment>
   }
 `;
 
-function makeRibbonGeometry(trackGeometry, random) {
+const ciliaVertex = `${organismGLSL}
+  attribute vec3 aCilium;
+  varying float vAlpha;
+  void main() {
+    float t = aCilium.x;
+    float extent = aCilium.y;
+    float side = aCilium.z;
+    vec3 p = edgeAt(t, side);
+    float research = researchAmount();
+    float show = mix(0.18, 1.0, ease(uShape));
+    float length = (0.12 + hash(t * 891.0) * 0.4) * show;
+    vec3 trail = sideAt(t) * side * extent * length;
+    trail.y -= extent * extent * (0.12 + uEnergy * 0.22);
+    trail.z += sin(t * 40.0 - uTime * 0.8 - extent * 2.0) * extent * extent * 0.09;
+    // Five lanes' bristles become perpendicular, ruler-straight ticks.
+    vec3 ruler = vec3(0.0, side * extent * 0.19, 0.0);
+    p += mix(trail, ruler, research) * (1.0 - goodbye());
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    vAlpha = (1.0 - extent * 0.78) * show * (1.0 - goodbye());
+  }
+`;
+const ciliaFragment = `
+  uniform vec3 uCopper;
+  uniform vec3 uCream;
+  uniform float uLineOpacity;
+  varying float vAlpha;
+  void main() {
+    gl_FragColor = vec4(mix(uCopper, uCream, 0.3), vAlpha * uLineOpacity);
+    #include <colorspace_fragment>
+  }
+`;
+
+function makeMembrane(trackGeometry) {
   const geometry = trackGeometry(new THREE.InstancedBufferGeometry());
-  const positions = new Float32Array((SEGMENTS + 1) * 2 * 3);
-  const indices = new Uint16Array(SEGMENTS * 6);
-  for (let segment = 0; segment <= SEGMENTS; segment += 1) {
-    const offset = segment * 6;
-    positions[offset] = positions[offset + 3] = segment / SEGMENTS;
-    positions[offset + 1] = -1;
-    positions[offset + 4] = 1;
-    if (segment < SEGMENTS) {
-      const vertex = segment * 2;
-      indices.set([vertex, vertex + 1, vertex + 2, vertex + 2, vertex + 1, vertex + 3], offset);
+  const positions = [];
+  const indices = [];
+  for (let index = 0; index <= PATCH_SEGMENTS; index += 1) {
+    positions.push(index / PATCH_SEGMENTS, -1, 0, index / PATCH_SEGMENTS, 1, 0);
+    if (index < PATCH_SEGMENTS) {
+      const v = index * 2;
+      indices.push(v, v + 1, v + 2, v + 2, v + 1, v + 3);
     }
   }
-  const seeds = new Float32Array(MAX_STRANDS * 4);
-  const kinds = new Float32Array(MAX_STRANDS);
-  for (let index = 0; index < MAX_STRANDS; index += 1) {
-    seeds.set([random(), random(), random(), random()], index * 4);
-    // Interleave full-height helices and shorter feathers so mobile LOD retains
-    // the same shape, instead of accidentally drawing only the inner core.
-    kinds[index] = index % 4 === 0 ? 0 : 1;
-  }
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 4));
-  geometry.setAttribute('aKind', new THREE.InstancedBufferAttribute(kinds, 1));
-  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('aPatch', new THREE.InstancedBufferAttribute(Float32Array.from({ length: PATCHES }, (_, index) => index), 1));
+  geometry.setIndex(indices);
+  geometry.instanceCount = PATCHES;
   return geometry;
 }
 
-/** A reversible, scroll-shaped 3D vortex driven by the scene's single RAF. */
-export function createFluidVortex({ trackGeometry, trackMaterial, colors, compact }) {
-  let seed = 24681;
-  const random = () => {
-    seed = (1664525 * seed + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-  const group = new THREE.Group();
-  group.name = 'fluid-vortex';
-  const geometry = makeRibbonGeometry(trackGeometry, random);
-  const uniforms = {
-    uAccent: { value: new THREE.Color() },
-    uHighlight: { value: new THREE.Color() },
-    uTip: { value: new THREE.Color() },
-    uTime: { value: 0 },
-    uExpansion: { value: 1 },
-    uEnergy: { value: 0 },
-    uDpr: { value: 1 },
-    uResolution: { value: new THREE.Vector2(1, 1) },
-    uOpacity: { value: 1 },
-  };
-  const makeMaterial = (glow) => trackMaterial(new THREE.ShaderMaterial({
-    uniforms: { ...uniforms, uGlow: { value: glow ? 1 : 0 } },
-    vertexShader,
-    fragmentShader,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    // Normal blending is deliberate: additive-only light disappears on warm.
-    blending: THREE.NormalBlending,
-    toneMapped: false,
-    forceSinglePass: true,
-  }));
-  const halo = new THREE.Mesh(geometry, makeMaterial(true));
-  const ribbons = new THREE.Mesh(geometry, makeMaterial(false));
-  halo.frustumCulled = ribbons.frustumCulled = false;
-  halo.renderOrder = 0;
-  ribbons.renderOrder = 1;
-  group.add(halo, ribbons);
+function makeCilia(trackGeometry) {
+  const geometry = trackGeometry(new THREE.BufferGeometry());
+  const parameters = [];
+  for (let index = 0; index < CILIA; index += 1) {
+    // Golden-ratio distribution preserves full coverage when mobile drawRange
+    // renders fewer cilia. Every root has exactly the membrane's t and side.
+    const t = 0.015 + ((index * 0.61803398875) % 1) * 0.97;
+    const side = index % 2 ? 1 : -1;
+    for (let segment = 0; segment < CILIA_SEGMENTS; segment += 1) {
+      parameters.push(t, segment / CILIA_SEGMENTS, side, t, (segment + 1) / CILIA_SEGMENTS, side);
+    }
+  }
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(parameters.length), 3));
+  geometry.setAttribute('aCilium', new THREE.Float32BufferAttribute(parameters, 3));
+  return geometry;
+}
 
-  const shardMaterial = trackMaterial(new THREE.MeshStandardMaterial({
-    metalness: 0.38,
-    roughness: 0.3,
-    emissiveIntensity: 0.45,
-    transparent: true,
-    opacity: 0.84,
+/**
+ * Drop-in factory name retained for scene.js. setProgress takes a shape 0..3:
+ * coiled orb, continuous S-ribbon, five connected circuit lanes, ember farewell.
+ * The host owns scroll anchors, camera projection, RAF, pausing and resources.
+ */
+export function createFluidVortex({ trackGeometry, trackMaterial, colors, compact = false }) {
+  const group = new THREE.Group();
+  group.name = 'ember-chrysalis';
+  const uniforms = {
+    uShape: { value: 0 }, uTime: { value: 0 }, uEnergy: { value: 0 },
+    uPointer: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uPointerImpulse: { value: new THREE.Vector2() },
+    uTwist: { value: 0 }, uWorkTravel: { value: 0 },
+    uHover: { value: 0.5 }, uHoverStrength: { value: 0 },
+    uCopper: { value: new THREE.Color() }, uCream: { value: new THREE.Color() },
+    uEmber: { value: new THREE.Color() }, uAccent: { value: new THREE.Color() },
+    uOpacity: { value: 0.9 }, uLineOpacity: { value: 0.48 },
+    uPatchCount: { value: PATCHES }, uDpr: { value: 1 }, uResolution: { value: new THREE.Vector2(1, 1) },
+  };
+  const material = (vertexShader, fragmentShader) => trackMaterial(new THREE.ShaderMaterial({
+    uniforms, vertexShader, fragmentShader, transparent: true, depthWrite: false,
+    side: THREE.DoubleSide, forceSinglePass: true,
+    blending: THREE.NormalBlending, toneMapped: false,
   }));
-  const satelliteMaterial = trackMaterial(new THREE.MeshStandardMaterial({
-    metalness: 0.5,
-    roughness: 0.26,
-    emissiveIntensity: 0.35,
-    transparent: true,
-    opacity: 0.72,
+  const membrane = new THREE.Mesh(makeMembrane(trackGeometry), material(membraneVertex, membraneFragment));
+  membrane.name = 'continuous-membrane';
+  const cilia = new THREE.LineSegments(makeCilia(trackGeometry), material(ciliaVertex, ciliaFragment));
+  cilia.name = 'edge-cilia';
+  const heartMaterial = trackMaterial(new THREE.MeshStandardMaterial({
+    roughness: 0.4, metalness: 0.55, emissiveIntensity: 0.15,
+    transparent: true, opacity: 0.62, depthWrite: false,
   }));
-  const shards = new THREE.InstancedMesh(
-    trackGeometry(new THREE.OctahedronGeometry(1, 0)), shardMaterial, MAX_SCATTER,
-  );
-  const satellites = new THREE.InstancedMesh(
-    trackGeometry(new THREE.TetrahedronGeometry(1, 0)), satelliteMaterial, 8,
-  );
-  shards.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  satellites.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  shards.frustumCulled = satellites.frustumCulled = false;
-  group.add(shards, satellites);
-  const scatterSeeds = Array.from({ length: MAX_SCATTER + 8 }, () => ({
-    phase: random() * TAU,
-    height: random() * TAU,
-    radius: random(),
-    size: 0.032 + random() * 0.047,
-    speed: 0.32 + random() * 0.24,
-  }));
-  const dummy = new THREE.Object3D();
-  const white = new THREE.Color(1, 1, 1);
-  const background = new THREE.Color();
+  const heart = new THREE.Mesh(trackGeometry(new THREE.IcosahedronGeometry(0.23, 1)), heartMaterial);
+  heart.name = 'ember-heart';
+  membrane.frustumCulled = cilia.frustumCulled = false;
+  group.add(membrane, cilia, heart);
+
+  let disposed = false;
+  let lastTime = null;
+  let ciliaCount = CILIA;
+  let lowPower = compact;
+  let pointerX = 0;
+  let pointerY = 0;
+  let pointerStrength = 0;
+  let pointerVelocity = 0;
+  let pointerAge = 10;
+  let targetStrength = 0;
+  let hoverTarget = 0;
+  let twistTarget = 0;
+  let workTarget = 0;
+  let lightTheme = false;
 
   const setTheme = (next) => {
+    if (disposed) return;
+    const bg = new THREE.Color(next.bg);
+    lightTheme = bg.r * 0.2126 + bg.g * 0.7152 + bg.b * 0.0722 > 0.5;
+    // Copper identity in every mode; dark-theme CSS colors themselves are not
+    // changed. Light paper needs darker copper ink, not additive white glow.
     uniforms.uAccent.value.set(next.accent);
-    uniforms.uHighlight.value.set(next.highlight);
-    background.set(next.bg);
-    const lightTheme = background.r * 0.2126 + background.g * 0.7152 + background.b * 0.0722 > 0.5;
-    uniforms.uTip.value.copy(uniforms.uAccent.value)
-      .lerp(uniforms.uHighlight.value, 0.28).lerp(white, lightTheme ? 0.13 : 0.82);
-    uniforms.uOpacity.value = lightTheme ? 0.87 : 1;
-    shardMaterial.color.set(next.accent);
-    shardMaterial.emissive.set(next.accent);
-    satelliteMaterial.color.set(next.highlight);
-    satelliteMaterial.emissive.set(next.highlight);
+    uniforms.uCopper.value.set(lightTheme ? '#A94E30' : '#C65D3A');
+    uniforms.uCream.value.set(lightTheme ? '#E48A4C' : '#FFE9C9');
+    uniforms.uEmber.value.set(lightTheme ? '#B9572F' : '#E48A4C');
+    uniforms.uOpacity.value = lightTheme ? 0.94 : 0.92;
+    uniforms.uLineOpacity.value = lightTheme ? 0.65 : 0.48;
+    heartMaterial.color.copy(uniforms.uCopper.value);
+    heartMaterial.emissive.copy(uniforms.uEmber.value);
   };
 
-  const resize = (width, height, dpr, lowPower) => {
-    const ratio = Math.min(dpr, lowPower ? 1.5 : 2);
-    uniforms.uResolution.value.set(Math.max(1, width * ratio), Math.max(1, height * ratio));
+  const resize = (width, height, dpr, nextCompact = compact) => {
+    if (disposed) return;
+    lowPower = Boolean(nextCompact);
+    const ratio = clamp(finite(dpr, 1), 0.5, lowPower ? 1.5 : 2);
+    uniforms.uResolution.value.set(Math.max(1, finite(width, 1) * ratio), Math.max(1, finite(height, 1) * ratio));
     uniforms.uDpr.value = ratio;
-    geometry.instanceCount = lowPower ? MOBILE_STRANDS : MAX_STRANDS;
-    shards.count = lowPower ? MOBILE_SCATTER : MAX_SCATTER;
-    satellites.count = lowPower ? 4 : 8;
+    // The membrane topology never changes with state or screen size. Only the
+    // decorative cilia draw count changes; no missing intervals in the ribbon.
+    ciliaCount = lowPower ? 110 : CILIA;
+    cilia.geometry.setDrawRange(0, ciliaCount * CILIA_SEGMENTS * 2);
   };
 
-  const update = (time, expansion, energy = 0) => {
-    const open = clamp(expansion, 0, 1);
-    uniforms.uTime.value = time;
-    uniforms.uExpansion.value = open;
-    uniforms.uEnergy.value = clamp(energy, 0, 1);
-    for (let index = 0; index < shards.count + satellites.count; index += 1) {
-      const satellite = index >= shards.count;
-      const localIndex = satellite ? index - shards.count : index;
-      const settings = scatterSeeds[satellite ? MAX_SCATTER + localIndex : index];
-      const angle = settings.phase + time * settings.speed + (1 - open) * 2.1;
-      const y = Math.sin(settings.height + time * 0.18) * 3.4;
-      const envelope = 0.42 + 0.58 * Math.sqrt(Math.max(0, 1 - (y / 3.8) ** 2));
-      const radius = (1.25 + settings.radius * 1.7) * (0.58 + open * 0.48) * envelope;
-      dummy.position.set(Math.cos(angle + y * 0.55) * radius, y, Math.sin(angle + y * 0.55) * radius);
-      dummy.rotation.set(angle * 0.7, angle * 1.2 + settings.height, angle * 0.4);
-      dummy.scale.set(settings.size, settings.size * (satellite ? 1 : 1.65), settings.size);
-      dummy.updateMatrix();
-      (satellite ? satellites : shards).setMatrixAt(localIndex, dummy.matrix);
+  const setProgress = (shape, workTravel = workTarget) => {
+    if (disposed) return;
+    uniforms.uShape.value = clamp(finite(shape), 0, 3);
+    workTarget = clamp(finite(workTravel), 0, 1);
+  };
+
+  const setPointer = (x, y, active = true) => {
+    if (disposed || lowPower) return;
+    if (!active) { targetStrength = 0; return; }
+    const nextX = clamp(finite(x), -12, 12);
+    const nextY = clamp(finite(y), -12, 12);
+    const dx = nextX - pointerX;
+    const dy = nextY - pointerY;
+    // Repeated events at the same coordinate must not keep an idle dent alive.
+    if (Math.hypot(dx, dy) > 0.0001) {
+      uniforms.uPointerImpulse.value.set(clamp(dx, -1, 1), clamp(dy, -1, 1));
+      pointerAge = 0;
+      targetStrength = 1;
     }
-    shards.instanceMatrix.needsUpdate = true;
-    satellites.instanceMatrix.needsUpdate = true;
+    pointerX = nextX; pointerY = nextY;
+    uniforms.uPointer.value.x = nextX; uniforms.uPointer.value.y = nextY;
+  };
+  const setHover = (segment = -1) => {
+    if (disposed) return;
+    hoverTarget = segment >= 0 && !lowPower ? 1 : 0;
+    if (hoverTarget) uniforms.uHover.value = clamp(finite(segment, 0.5), 0, 1);
+  };
+  const setScrollVelocity = (velocity) => { if (!disposed) twistTarget = clamp(finite(velocity), -1, 1); };
+  const resetInteraction = () => {
+    targetStrength = pointerStrength = pointerVelocity = hoverTarget = twistTarget = 0;
+    pointerAge = 10;
+    uniforms.uPointer.value.z = uniforms.uPointer.value.w = 0;
+    uniforms.uPointerImpulse.value.set(0, 0);
+    uniforms.uHoverStrength.value = uniforms.uEnergy.value = uniforms.uTwist.value = 0;
+    lastTime = null;
+  };
+
+  // Legacy expansion argument intentionally ignored: it cannot distinguish work
+  // from hero. setProgress carries the existing controller's section identity.
+  const update = (time, _legacyExpansion = 1, energy = 0) => {
+    if (disposed) return;
+    const now = Math.max(0, finite(time));
+    const delta = lastTime === null ? 0 : clamp(now - lastTime, 0, 0.05);
+    lastTime = now;
+    pointerAge += delta;
+    if (pointerAge > 0.06) targetStrength = 0;
+    [pointerStrength, pointerVelocity] = settle(pointerStrength, pointerVelocity, targetStrength, delta);
+    const response = 1 - Math.exp(-6 * delta);
+    uniforms.uPointer.value.z = lowPower ? 0 : pointerStrength;
+    uniforms.uPointer.value.w = lowPower ? 0 : pointerStrength;
+    uniforms.uPointerImpulse.value.multiplyScalar(Math.exp(-7.3 * delta));
+    uniforms.uEnergy.value += (clamp(finite(energy), 0, 1) - uniforms.uEnergy.value) * response;
+    uniforms.uTwist.value += (twistTarget - uniforms.uTwist.value) * response;
+    twistTarget *= Math.exp(-4 * delta);
+    uniforms.uWorkTravel.value += (workTarget - uniforms.uWorkTravel.value) * response;
+    uniforms.uHoverStrength.value += (hoverTarget - uniforms.uHoverStrength.value) * response;
+    uniforms.uTime.value = now;
+    const orbPresence = 1 - THREE.MathUtils.smoothstep(uniforms.uShape.value, 0.15, 0.85);
+    heart.scale.setScalar(orbPresence * (1 + Math.sin(now * 1.65) * 0.045));
+    heart.rotation.set(now * 0.08, now * 0.13, 0);
+    heartMaterial.opacity = (lightTheme ? 0.56 : 0.62) * orbPresence;
+    // Don't submit an invisible heart after uncoiling.
+    heart.visible = orbPresence > 0.001;
   };
 
   setTheme(colors);
   resize(1, 1, 1, compact);
-  update(0, 1);
+  update(0);
   return {
-    group,
-    update,
-    resize,
-    setTheme,
-    // InstancedMesh owns GPU instance buffers in addition to the shared geometry
-    // and material resources disposed by the scene's existing resource tracker.
+    group, setTheme, resize, update, setProgress, setPointer, setHover, setScrollVelocity, resetInteraction,
     dispose() {
-      shards.dispose();
-      satellites.dispose();
+      if (disposed) return;
+      disposed = true;
+      // Geometry/material lifetime remains with the existing scene tracker.
+      group.visible = false;
     },
-    get expansion() { return uniforms.uExpansion.value; },
-    get strandCount() { return geometry.instanceCount; },
-    get scatterCount() { return shards.count + satellites.count; },
+    get expansion() { return 1 - uniforms.uShape.value / 3; },
+    get shape() { return uniforms.uShape.value; },
+    get strandCount() { return 1; },
+    get ciliaCount() { return ciliaCount; },
+    get scatterCount() { return 0; },
+    get drawCalls() { return heart.visible ? 3 : 2; },
+    get pointerStrength() { return uniforms.uPointer.value.z; },
+    get hoverStrength() { return uniforms.uHoverStrength.value; },
+    get energy() { return uniforms.uEnergy.value; },
   };
 }
